@@ -57,9 +57,12 @@ header .topbar { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: ce
 .brand svg { flex: none; }
 .powered { font-size: 13.5px; color: #B9C9CF; }
 .powered b { color: #F3F1EC; font-weight: 600; }
-.hero { padding: 34px 0 20px; }
-.hero h1 { margin: 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.15; font-weight: 700; letter-spacing: -0.025em; max-width: 24ch; }
-.hero p { margin: 10px 0 0; font-size: 17px; color: var(--ink-2); max-width: 66ch; }
+.hero { padding: 40px 0 24px; }
+.hero h1 { margin: 0; font-size: clamp(30px, 4.2vw, 52px); line-height: 1.08; font-weight: 700; letter-spacing: -0.03em; }
+.hero p { margin: 12px 0 0; font-size: 18px; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 18px 0 0; padding: 0; }
+.facts li { background: var(--white); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 14px; font-size: 14.5px; color: var(--ink-2); }
+.facts b { color: var(--navy); font-weight: 700; }
 
 /* Map with its controls on it */
 .mapcard { background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px; }
@@ -234,8 +237,9 @@ footer { color: var(--ink-3); font-size: 13px; padding: 26px 0 36px; }
 
 <main class="wrap">
   <section class="hero">
-    <h1>Which river number to trust, and what the river is doing that a forecast won't tell you.</h1>
-    <p>USGS, the National Weather Service and NOAA's National Water Model often report very different numbers for the same river. Pick a gauge for a quick answer, or ask a team of AI agents to find out why.</p>
+    <h1>See what your river is doing.</h1>
+    <p>Find out how much water is flowing and whether it's rising. Spot what a forecast won't tell you, like a dam that releases water every evening. Different agencies run the gauges that measure a river and the computer models that estimate it, and each updates on its own schedule, so their numbers don't always match. RiverTruth shows you which one to go by, and why.</p>
+    <ul class="facts" aria-label="At a glance"><li><b>13,000</b> US rivers and streams</li><li>Latest <b>hourly</b> readings</li><li>Answers in <b>seconds</b></li></ul>
   </section>
 
   <section class="mapcard" aria-label="Map of US river gauges">

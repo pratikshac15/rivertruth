@@ -146,6 +146,16 @@ class Design(unittest.TestCase):
             self.assertLessEqual(page.locator(".hero p").bounding_box()["width"], 760)
             b.close()
 
+    def test_the_headline_is_short_and_backed_by_quick_facts(self):
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b, page, errors = self._page(p, s.url)
+            h1 = page.text_content(".hero h1").strip()
+            self.assertLessEqual(len(h1), 40, h1)
+            size = float(page.evaluate("parseFloat(getComputedStyle(document.querySelector('.hero h1')).fontSize)"))
+            self.assertLess(page.locator(".hero h1").bounding_box()["height"], size * 1.6, "one line at desktop width")
+            self.assertGreaterEqual(page.locator(".hero .facts li").count(), 3)
+            b.close()
+
     def test_phone_width_has_no_sideways_scrolling(self):
         with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
             b = p.chromium.launch()
