@@ -7,310 +7,367 @@
 <title>RiverTruth</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
+/* One visual system: deep river navy, warm paper, water blue; orange only for surges and warnings. */
 :root {
-  --paper: #E9EEEC;
-  --sheet: #F7F9F8;
-  --ink: #1D2B33;
-  --ink-2: #4A5A63;
-  --rule: #C9D3D0;
+  --navy: #12242C;
+  --navy-2: #1C3640;
+  --paper: #F3F1EC;
+  --sheet: #FBFAF7;
+  --white: #FFFFFF;
+  --ink: #12242C;
+  --ink-2: #4B5A61;
+  --ink-3: #6E7B81;
+  --rule: #DDD9D0;
+  --rule-2: #E9E6DF;
+  --water: #1F6F8B;
+  --water-soft: #E3EEF2;
+  --warn: #C9661B;
+  --warn-soft: #FBEBDD;
   --usgs: #2C6E8F;
   --nwm: #7A5BA6;
   --nws: #B07D2B;
   --rain: #8DB8C9;
   --critic: #A8443A;
   --ok: #3E7D55;
-  --radius-lg: 14px;
-  --radius-sm: 6px;
+  --radius: 16px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(18,36,44,.06), 0 4px 16px rgba(18,36,44,.06);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--paper); color: var(--ink); }
-body { font: 15px/1.5 "Public Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
-a { color: var(--usgs); }
-:focus-visible { outline: 3px solid var(--usgs); outline-offset: 2px; }
-
-.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
-
-/* Masthead: the name, what it does, and where it looks */
-header { padding: 22px 0 6px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; }
-header h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
-header h1 small { display: block; font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-top: 2px; }
-.reach { color: var(--ink-2); font-size: 14px; }
-
-/* Why it matters + live disagreement readout */
-.sel-title { margin: 0 0 8px; font-size: 20px; }
-.why { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; margin: 10px 0 4px; align-items: stretch; }
-@media (max-width: 900px) { .why { grid-template-columns: 1fr; } }
-.why p { margin: 0 0 8px; max-width: 70ch; }
-.why p:last-child { margin-bottom: 0; }
-.now { background: var(--ink); color: #fff; border-radius: var(--radius-lg); padding: 14px 16px; }
-.now .big { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 0 8px; }
-.now dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 14px; }
-.now dt { color: #C9D6DB; }
-.now dd { margin: 0; text-align: right; font-weight: 600; }
-.now .src-usgs { border-left: 3px solid #7FB6D1; padding-left: 6px; }
-.now .src-nwm { border-left: 3px solid #B9A2DA; padding-left: 6px; }
-.now .src-nws { border-left: 3px solid #E0B66B; padding-left: 6px; }
-.now small { display: block; color: #C9D6DB; margin-top: 8px; font-size: 12.5px; }
-abbr.term { text-decoration: underline dotted var(--ink-2); text-underline-offset: 3px; cursor: help; }
-
-/* River check: map + plain-language card */
-.check { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 8px 0 14px; }
-.card dl { grid-template-columns: 1fr 1fr; column-gap: 28px; }
-@media (max-width: 800px) { .card dl { grid-template-columns: 1fr; } }
-.card .headline { max-width: 60ch; }
-.mapbox { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.maptools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.maptools input { width: 8.5em; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 7px 10px; font: inherit; text-transform: uppercase; }
-.maptools input::placeholder { text-transform: none; }
-#map { height: 520px; border-radius: 10px; border: 1px solid var(--rule); background: #DCE5E3; }
-@media (max-width: 600px) { #map { height: 340px; } }
-.maplegend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); }
-.maplegend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: -1px; }
-.card { background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.card h2 { margin: 0; font-size: 18px; }
-.card .gname { font-weight: 700; font-size: 16px; }
-.card .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.card select, .card input[type=text] { border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 7px 10px; font: inherit; background: #fff; }
-.card input[type=text] { flex: 1; min-width: 9em; }
-.card .headline { font-family: "Source Serif 4", Georgia, serif; font-size: 21px; line-height: 1.3; font-weight: 600; margin: 4px 0 0; }
-.card dl { margin: 0; display: grid; gap: 8px; }
-.card dt { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
-.card dd { margin: 0; }
-.card .seen { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
-.alert { background: #F8E1DE; border-left: 4px solid var(--critic); color: #5A1E17; font-weight: 600; padding: 10px 12px; border-radius: 6px; }
-.caution { background: #FBF3E4; border-left: 4px solid var(--nws); padding: 8px 10px; border-radius: 6px; font-size: 14px; }
-.learned { background: var(--sheet); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
-.card .foot { font-size: 12.5px; color: var(--ink-2); }
-.btn-main { border: 0; background: var(--ink); color: #fff; border-radius: var(--radius-sm); padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; }
-.btn-main[disabled] { opacity: .55; cursor: progress; }
-.leaflet-popup-content { font: 14px/1.4 "Public Sans", system-ui, sans-serif; }
-.leaflet-popup-content b { display: block; margin-bottom: 2px; }
-
-/* Rivers: where do the sources disagree right now? */
-.rivers { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px; margin: 14px 0 0; }
-.rivers-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
-.rivers-head h2 { margin: 0; font-size: 18px; }
-.rivers-head .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.rivers-head input { width: 9.5em; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 7px 10px; font: inherit; text-transform: uppercase; }
-.rivers-head input::placeholder { text-transform: none; }
-.btn-quiet { border: 1px solid var(--ink-2); background: #fff; color: var(--ink); border-radius: var(--radius-sm); padding: 7px 12px; font: inherit; font-weight: 600; cursor: pointer; }
-.btn-quiet[disabled] { opacity: .5; cursor: progress; }
-table.rank { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-table.rank th, table.rank td { text-align: left; padding: 7px 8px; border-top: 1px solid var(--rule); vertical-align: middle; }
-table.rank th { border-top: 0; color: var(--ink-2); font-weight: 600; font-size: 13px; }
-table.rank td.num { text-align: right; font-weight: 600; white-space: nowrap; }
-table.rank tr.sel { background: #E3ECEF; }
-table.rank tr[data-lid] { cursor: pointer; }
-table.rank tr[data-lid]:hover { background: #EDF2F1; }
-.kind { font-size: 12px; color: var(--ink-2); }
-.bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--critic); vertical-align: middle; margin-left: 6px; opacity: .75; }
-@media (max-width: 700px) { table.rank .hide-sm { display: none; } }
-
-/* Ask */
-.ask { margin: 14px 0 18px; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 14px; }
-.ask textarea { width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--rule); border-radius: var(--radius-sm);
-  padding: 10px 12px; font: inherit; color: var(--ink); background: #fff; }
-.ask-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
-.case { border: 1px solid var(--rule); background: #fff; color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
-.case:hover { border-color: var(--ink-2); }
-.go { margin-left: auto; background: var(--ink); color: #fff; border: 0; border-radius: var(--radius-sm); padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer; }
-.go[disabled] { opacity: .55; cursor: progress; }
-.note { font-size: 13px; color: var(--ink-2); }
+body { font: 16px/1.55 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+a { color: var(--water); }
+:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+@media (max-width: 600px) { .wrap { padding: 0 16px; } }
+.eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--water); margin: 0; }
+.note { font-size: 14px; color: var(--ink-2); }
 .error { color: var(--critic); }
+h2, h3 { letter-spacing: -0.01em; }
 
-/* Hydrograph hero */
-.hydro { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px 16px 8px; }
-.hydro-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; }
+/* Top bar: the product, and what powers it */
+header { background: var(--navy); color: #F3F1EC; }
+header .topbar { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; justify-content: space-between; padding-top: 14px; padding-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.brand svg { flex: none; }
+.powered { font-size: 13.5px; color: #B9C9CF; }
+.powered b { color: #F3F1EC; font-weight: 600; }
+.hero { padding: 34px 0 20px; }
+.hero h1 { margin: 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.15; font-weight: 700; letter-spacing: -0.025em; max-width: 24ch; }
+.hero p { margin: 10px 0 0; font-size: 17px; color: var(--ink-2); max-width: 66ch; }
+
+/* Map with its controls on it */
+.mapcard { background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px; }
+.mapwrap { position: relative; }
+#map { height: 560px; border-radius: 12px; background: #DCE5E3; }
+@media (max-width: 600px) { #map { height: 420px; } }
+.maptools { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 1000; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; pointer-events: none; }
+.maptools > * { pointer-events: auto; }
+.searchbox { display: flex; align-items: center; background: var(--white); border-radius: 999px; box-shadow: 0 2px 10px rgba(18,36,44,.18); padding: 4px 4px 4px 14px; }
+.searchbox input { border: 0; outline: 0; width: 7.5em; font: inherit; font-size: 15px; text-transform: uppercase; background: transparent; }
+.searchbox input::placeholder { text-transform: none; color: var(--ink-3); }
+.searchbox button { border: 0; background: var(--water-soft); color: var(--water); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.maptools .btn-main { border-radius: 999px; box-shadow: 0 2px 10px rgba(18,36,44,.18); }
+.maplegend { position: absolute; left: 12px; bottom: 12px; z-index: 1000; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: calc(100% - 120px);
+  background: rgba(255,255,255,.94); border-radius: 10px; padding: 7px 11px; font-size: 12.5px; color: var(--ink-2); box-shadow: 0 1px 6px rgba(18,36,44,.14); }
+.maplegend span { white-space: nowrap; }
+.maplegend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: 0; }
+.mapnote { margin: 10px 4px 2px; }
+.leaflet-popup-content { font: 14px/1.4 "IBM Plex Sans", system-ui, sans-serif; }
+
+/* The answer: the River check */
+.card { margin: 20px 0; background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 26px; display: flex; flex-direction: column; gap: 14px; border-top: 5px solid var(--water); }
+@media (max-width: 600px) { .card { padding: 18px 16px; } }
+.card .gname { font-size: clamp(22px, 2.6vw, 30px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.card .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.card select, .card input[type=text] { border: 1px solid var(--rule); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 15px; background: var(--sheet); color: var(--ink); }
+.card input[type=text] { flex: 1; min-width: 9em; }
+.card .headline { font-size: clamp(20px, 2.2vw, 26px); line-height: 1.3; font-weight: 600; margin: 4px 0 0; letter-spacing: -0.01em; max-width: 46ch; }
+.card dl { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--rule-2); }
+.card dl > div { padding: 14px 18px 14px 0; border-bottom: 1px solid var(--rule-2); }
+.card dl > div:nth-child(odd) { border-right: 1px solid var(--rule-2); }
+.card dl > div:nth-child(even) { padding-left: 18px; padding-right: 0; }
+@media (max-width: 800px) { .card dl { grid-template-columns: 1fr; } .card dl > div:nth-child(odd) { border-right: 0; } .card dl > div:nth-child(even) { padding-left: 0; } }
+.card dt { font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--water); margin-bottom: 4px; }
+.card dd { margin: 0; }
+.card .seen { margin: 6px 0 0; padding-left: 18px; font-size: 14.5px; color: var(--ink-2); }
+.empty-state { display: flex; gap: 14px; align-items: flex-start; color: var(--ink-2); }
+.alert { background: #F8E1DE; border-left: 5px solid var(--critic); color: #5A1E17; font-weight: 600; padding: 12px 14px; border-radius: var(--radius-sm); }
+.caution { background: var(--warn-soft); border-left: 5px solid var(--warn); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14.5px; }
+.learned { background: var(--water-soft); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14.5px; }
+.card .foot { font-size: 13px; color: var(--ink-3); }
+.btn-main { border: 0; background: var(--navy); color: #F3F1EC; border-radius: 999px; padding: 9px 18px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-main:hover { background: var(--navy-2); }
+.btn-main[disabled] { opacity: .5; cursor: not-allowed; }
+.btn-quiet { border: 1px solid var(--ink-2); background: var(--white); color: var(--ink); border-radius: 999px; padding: 8px 16px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-quiet:hover { border-color: var(--ink); }
+.btn-quiet[disabled] { opacity: .5; cursor: progress; }
+.btn-accent { border: 0; background: var(--water); color: #FFFFFF; border-radius: 999px; padding: 10px 20px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-accent:hover { background: #185B72; }
+
+/* The selected gauge: pattern callout, chart and the live readout */
+.gauge-head { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; justify-content: space-between; margin: 8px 0 12px; }
+.sel-title { margin: 0; font-size: 22px; font-weight: 700; }
+.callout { margin: 0 0 16px; background: var(--warn-soft); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 15.5px; color: #5B330E; border-left: 5px solid var(--warn); }
+.callout:empty { display: none; }
+.viz { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+@media (max-width: 900px) { .viz { grid-template-columns: 1fr; } }
+.hydro { background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 18px 10px; min-width: 0; }
+.hydro-head { display: flex; flex-direction: column; gap: 6px; }
 .hydro-head h2 { margin: 0; font-size: 18px; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink-2); }
 .legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--c); }
 .chart-box { position: relative; margin-top: 8px; }
 .chart-box svg { display: block; width: 100%; height: auto; }
-.chart-box .tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-sm);
-  padding: 6px 8px; font-size: 12.5px; line-height: 1.4; box-shadow: 0 2px 8px rgba(29,43,51,.12); display: none; white-space: nowrap; }
+.chart-box .tip { position: absolute; pointer-events: none; background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  padding: 6px 8px; font-size: 12.5px; line-height: 1.4; box-shadow: 0 2px 8px rgba(18,36,44,.14); display: none; white-space: nowrap; }
+.now { background: var(--navy); color: #F3F1EC; border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+.now .when { font-size: 13.5px; color: #B9C9CF; }
+.now .big { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin: 2px 0 10px; }
+.now dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; margin: 0; font-size: 14.5px; }
+.now dt { color: #C9D6DB; }
+.now dd { margin: 0; text-align: right; font-weight: 600; }
+.now .src-usgs { border-left: 3px solid #7FB6D1; padding-left: 8px; }
+.now .src-nwm { border-left: 3px solid #B9A2DA; padding-left: 8px; }
+.now .src-nws { border-left: 3px solid #E0B66B; padding-left: 8px; }
+.now small { display: block; color: #C9D6DB; margin-top: auto; padding-top: 12px; font-size: 13px; }
+abbr.term { text-decoration: underline dotted var(--ink-2); text-underline-offset: 3px; cursor: help; }
 
-/* Investigation */
-.grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; margin: 18px 0; }
+/* The agent team: opened on request */
+.deep { margin: 28px 0 8px; background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 26px; }
+@media (max-width: 600px) { .deep { padding: 18px 16px; } }
+.deep h2 { margin: 6px 0 4px; font-size: 24px; }
+.deep .intro { margin: 0 0 16px; color: var(--ink-2); max-width: 70ch; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+.steps li { background: var(--water-soft); color: var(--navy); border-radius: 999px; padding: 5px 12px; font-size: 13.5px; font-weight: 600; }
+.ask textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--rule); border-radius: 12px;
+  padding: 12px 14px; font: inherit; color: var(--ink); background: var(--sheet); }
+.ask-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.case { border: 1px solid var(--rule); background: var(--white); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.case:hover { border-color: var(--ink-2); }
+.go { margin-left: auto; background: var(--navy); color: #F3F1EC; border: 0; border-radius: 999px; padding: 10px 22px; font: inherit; font-weight: 600; cursor: pointer; }
+.go[disabled] { opacity: .5; cursor: progress; }
+.status-line { font-size: 14px; color: var(--ink-2); margin: 8px 0 0; min-height: 1.5em; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; margin: 20px 0 18px; }
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-section.panel { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px; min-width: 0; }
-section.panel h2 { margin: 0 0 10px; font-size: 17px; }
-.panel-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+section.panel { background: var(--sheet); border: 1px solid var(--rule-2); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+section.panel h2 { margin: 0 0 10px; font-size: 16px; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .panel-head h2 { margin: 0; }
 .empty { color: var(--ink-2); font-size: 14px; }
-
 .timeline { list-style: none; margin: 0; padding: 0; }
 .timeline > li { position: relative; padding: 0 0 14px 22px; border-left: 2px solid var(--rule); margin-left: 6px; }
-.timeline > li::before { content: ""; position: absolute; left: -7px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--sheet); border: 2px solid var(--ink-2); }
+.timeline > li::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--sheet); border: 2px solid var(--water); }
 .timeline > li.critic::before { border-color: var(--critic); }
-.timeline > li.done::before { background: var(--ink-2); }
+.timeline > li.done::before { background: var(--water); }
 .who { font-weight: 600; }
 .critic .who { color: var(--critic); }
-.check { margin-top: 6px; padding: 8px 10px; background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-sm); }
-.check .purpose { font-weight: 500; }
+.timeline .check { margin-top: 6px; padding: 10px 12px; background: var(--white); border: 1px solid var(--rule-2); border-radius: var(--radius-sm); }
+.timeline .check .purpose { font-weight: 500; }
 .finding { margin-top: 4px; font-size: 14px; }
-.stance { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px; margin-right: 6px; background: #E4E8E7; color: var(--ink-2); }
+.stance { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; margin-right: 6px; background: #E8E6E0; color: var(--ink-2); }
 .stance.supports, .stance.supported { background: #DDEBE1; color: var(--ok); }
 .stance.refutes, .stance.refuted { background: #F2DEDB; color: var(--critic); }
 details { margin-top: 4px; font-size: 13px; }
 details summary { cursor: pointer; color: var(--ink-2); }
-pre.sql { white-space: pre-wrap; word-break: break-word; background: #F0F3F2; border-radius: var(--radius-sm); padding: 8px; margin: 6px 0 0; font: 12.5px/1.45 ui-monospace, Menlo, monospace; }
+pre.sql { white-space: pre-wrap; word-break: break-word; background: #F0EEE8; border-radius: var(--radius-sm); padding: 8px; margin: 6px 0 0; font: 12.5px/1.45 ui-monospace, Menlo, monospace; }
 .issues { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
 .issues li { margin-bottom: 4px; }
-
-.hyp { padding: 10px 0; border-top: 1px solid var(--rule); }
+.hyp { padding: 10px 0; border-top: 1px solid var(--rule-2); }
 .hyp:first-child { border-top: 0; padding-top: 0; }
 .hyp .claim { font-size: 14px; margin: 4px 0; }
 .trail { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: var(--ink-2); }
 .trail b { font-weight: 600; }
-
 table.receipts { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.receipts th, table.receipts td { text-align: left; padding: 5px 6px; border-top: 1px solid var(--rule); vertical-align: top; }
+table.receipts th, table.receipts td { text-align: left; padding: 6px; border-top: 1px solid var(--rule-2); vertical-align: top; }
 table.receipts th { font-weight: 600; color: var(--ink-2); border-top: 0; }
 .model { word-break: break-all; }
-
 .memory { font-size: 13.5px; white-space: pre-wrap; color: var(--ink-2); max-height: 220px; overflow: auto; }
-
-/* Report reads like a hydrology memo */
-.report { font-family: "Source Serif 4", Georgia, serif; font-size: 17px; line-height: 1.6; max-width: 76ch; }
-.report h2 { font-family: "Public Sans", sans-serif; font-size: 18px; margin: 22px 0 6px; }
+.report { font-size: 16.5px; line-height: 1.65; max-width: 76ch; }
+.report h2 { font-size: 18px; margin: 24px 0 6px; }
 .report h2:first-child { margin-top: 0; }
-.report table { border-collapse: collapse; font-size: 15px; }
+.report table { border-collapse: collapse; font-size: 14.5px; display: block; overflow-x: auto; }
 .report td, .report th { border: 1px solid var(--rule); padding: 4px 8px; }
+.report-panel { background: var(--white); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 22px; }
 
-.status-line { font-size: 13px; color: var(--ink-2); margin: 6px 0 0; min-height: 1.5em; }
-footer { color: var(--ink-2); font-size: 13px; padding: 10px 0 30px; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+/* Where do the sources disagree near here? */
+.rivers { background: var(--white); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 26px; margin: 28px 0 0; }
+@media (max-width: 600px) { .rivers { padding: 18px 16px; } }
+.rivers-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.rivers-head h2 { margin: 4px 0 0; font-size: 22px; }
+table.rank { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14.5px; }
+table.rank th, table.rank td { text-align: left; padding: 9px 8px; border-top: 1px solid var(--rule-2); vertical-align: middle; }
+table.rank th { border-top: 0; color: var(--ink-2); font-weight: 600; font-size: 13px; }
+table.rank td.num { text-align: right; font-weight: 600; white-space: nowrap; }
+table.rank tr.sel { background: var(--water-soft); }
+table.rank tr[data-lid] { cursor: pointer; }
+table.rank tr[data-lid]:hover { background: #F4F2EC; }
+.kind { font-size: 12.5px; color: var(--ink-2); }
+.bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--warn); vertical-align: middle; margin-left: 6px; opacity: .8; }
+@media (max-width: 700px) { table.rank .hide-sm { display: none; } }
+
+/* How it works */
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 32px 0 0; }
+@media (max-width: 900px) { .how { grid-template-columns: 1fr; } }
+.how div { border-top: 3px solid var(--water); padding-top: 12px; }
+.how h3 { margin: 0 0 6px; font-size: 16px; }
+.how p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+footer { color: var(--ink-3); font-size: 13px; padding: 26px 0 36px; }
+@media (max-width: 600px) { .maptools .hint { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>RiverTruth<small>Which river number to trust, and what the river is doing that a forecast won't tell you.</small></h1>
-    <div class="reach" id="reachName"></div>
-  </header>
+<header>
+  <div class="wrap topbar">
+    <p class="brand"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14" fill="#1F6F8B"/><path d="M5 12c3-3 6 3 9 0s6 3 9 0M5 17c3-3 6 3 9 0s6 3 9 0" stroke="#F3F1EC" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>RiverTruth</p>
+    <p class="powered" style="margin:0">Powered by <b>Zetaris</b> · <b>Meterless</b> Nightshift and World Model · <b>NVIDIA Nemotron</b></p>
+  </div>
+  <span class="sr-only" id="reachName"></span>
+</header>
 
-  <section class="check" aria-label="River check">
-    <div class="mapbox">
+<main class="wrap">
+  <section class="hero">
+    <h1>Which river number to trust, and what the river is doing that a forecast won't tell you.</h1>
+    <p>USGS, the National Weather Service and NOAA's National Water Model often report very different numbers for the same river. Pick a gauge for a quick answer, or ask a team of AI agents to find out why.</p>
+  </section>
+
+  <section class="mapcard" aria-label="Map of US river gauges">
+    <div class="mapwrap">
+      <div id="map" role="region" aria-label="Map of river gauges"></div>
       <div class="maptools">
         <button type="button" class="btn-main" id="locate">Use my location</button>
-        <span class="note">or pan the map, or type an NWS gauge code</span>
-        <input id="lidIn" placeholder="e.g. CKLA1" maxlength="6" autocomplete="off" aria-label="NWS gauge code">
-        <button type="button" class="btn-quiet" id="lookup">Go</button>
+        <div class="searchbox">
+          <input id="lidIn" placeholder="e.g. CKLA1" maxlength="6" autocomplete="off" aria-label="NWS gauge code">
+          <button type="button" id="lookup">Go</button>
+        </div>
       </div>
-      <div id="map" role="region" aria-label="Map of river gauges"></div>
       <div class="maplegend"><span style="--c:#2C6E8F">normal</span><span style="--c:#C9A227">action stage</span><span style="--c:#D9822B">minor flood</span><span style="--c:#C0392B">moderate</span><span style="--c:#7B2D8E">major</span><span style="--c:#9AA7AD">no current reading</span></div>
-      <p class="note" id="mapNote" style="margin:0">Every NWS river gauge in the US. Gauges in view are found with SQL over NOAA's gauge catalog in Zetaris.</p>
     </div>
-    <div class="card" id="card" aria-live="polite">
-      <h2>River check</h2>
-      <div class="gname" id="cName">Pick a gauge on the map</div>
-      <div class="note" id="cNow">Click a dot near where you'll be. You'll get which number to trust there, what the river has been doing this week, and how it is right now.</div>
-      <div class="row">
-        <select id="cAct" aria-label="What are you planning?">
-          <option>fishing</option><option>kayaking or canoeing</option><option>swimming</option><option>boating</option><option>camping by the river</option><option>just curious</option>
-        </select>
-        <input type="text" id="cWhen" value="this evening" aria-label="When?">
-        <button type="button" class="btn-main" id="cGo" disabled>Check this river</button>
-      </div>
-      <div id="cOut"></div>
+    <p class="note mapnote" id="mapNote">Every NWS river gauge in the US. Gauges in view are found with SQL over NOAA's gauge catalog in Zetaris.</p>
+  </section>
+
+  <section class="card" id="card" aria-live="polite" aria-label="River check">
+    <p class="eyebrow">River check</p>
+    <div class="gname" id="cName">Pick a gauge on the map</div>
+    <div class="note" id="cNow">Click a dot near where you'll be. You'll see which number to trust there, what the river has been doing this week, and how it is right now.</div>
+    <div class="row">
+      <select id="cAct" aria-label="What are you planning?">
+        <option>fishing</option><option>kayaking or canoeing</option><option>swimming</option><option>boating</option><option>camping by the river</option><option>just curious</option>
+      </select>
+      <input type="text" id="cWhen" value="this evening" aria-label="When?">
+      <button type="button" class="btn-main" id="cGo" disabled>Check this river</button>
     </div>
+    <div id="cOut"></div>
   </section>
 
   <div id="gaugeDetail" hidden>
-  <section class="why" aria-label="The selected gauge">
-    <div>
-      <h2 class="sel-title" id="selTitle">Black Warrior River at Tuscaloosa and Northport, Alabama</h2>
-      <p>Every river gauge on the map has up to four sources: a USGS gauge measures the flow, the National Water Model simulates it, the National Weather Service gauge reports its own number, and rainfall is tracked separately. They often disagree, sometimes by more than 20 times, and it is hard to know which to trust.</p>
-      <p>The River check above answers that in seconds from numbers computed in code. For a full explanation, a team of AI agents investigates: it tests each possible cause against the data in Zetaris, challenges its own findings, and gives an answer you can check.</p>
-      <p class="note" id="selNote">On this river, flow at Northport has jumped from about 150 to over 5,000 cfs within an hour at 9 PM every evening this week, with no rain: water released from a hydropower dam upstream. Anyone on the water below a dam would feel that surge, even when the model still shows a calm river.</p>
+    <div class="gauge-head">
+      <h2 class="sel-title" id="selTitle"></h2>
     </div>
-    <div class="now" aria-live="polite">
-      <div class="note" style="color:#C9D6DB" id="nowWhen">Latest hour with all sources</div>
-      <div class="big" id="nowBig">Loading…</div>
-      <dl>
-        <dt class="src-usgs">USGS measured</dt><dd id="nowUsgs">–</dd>
-        <dt class="src-nwm">National Water Model</dt><dd id="nowNwm">–</dd>
-        <dt class="src-nws" id="nowNwsLbl">NWS gauge</dt><dd id="nowNws">–</dd>
-      </dl>
-      <small id="nowPeak"></small>
-    </div>
-  </section>
-
-  <section class="hydro" aria-labelledby="hydroTitle">
-    <div class="hydro-head">
-      <h2 id="hydroTitle">Four agencies, one river: the last 7 days</h2>
-      <div class="legend">
-        <span style="--c: var(--usgs)" id="lgUsgs">USGS measured flow, Northport</span>
-        <span style="--c: var(--nwm)" id="lgNwm">National Water Model, simulated</span>
-        <span style="--c: var(--nws)" id="lgNws">NWS flow, Oliver Lock and Dam</span>
-        <span style="--c: var(--nws)" id="lgLevel" hidden>Water level</span>
-        <span style="--c: var(--rain)">Rain (mm)</span>
+    <p class="callout" id="selNote"></p>
+    <div class="viz">
+      <section class="hydro" aria-labelledby="hydroTitle">
+        <div class="hydro-head">
+          <h2 id="hydroTitle">Four agencies, one river: the last 7 days</h2>
+          <div class="legend">
+            <span style="--c: var(--usgs)" id="lgUsgs">USGS measured flow, Northport</span>
+            <span style="--c: var(--nwm)" id="lgNwm">National Water Model, simulated</span>
+            <span style="--c: var(--nws)" id="lgNws">NWS flow, Oliver Lock and Dam</span>
+            <span style="--c: var(--nws)" id="lgLevel" hidden>Water level</span>
+            <span style="--c: var(--rain)">Rain (mm)</span>
+          </div>
+        </div>
+        <div class="chart-box" id="chartBox"><svg id="chart" viewBox="0 0 1000 320" role="img" aria-label="Hourly flow from four sources over seven days"></svg><div class="tip" id="tip"></div></div>
+        <p class="note" id="chartNote"></p>
+      </section>
+      <div class="now" aria-live="polite">
+        <div class="when" id="nowWhen">Latest hour with all sources</div>
+        <div class="big" id="nowBig">Loading…</div>
+        <dl>
+          <dt class="src-usgs">USGS measured</dt><dd id="nowUsgs">–</dd>
+          <dt class="src-nwm">National Water Model</dt><dd id="nowNwm">–</dd>
+          <dt class="src-nws" id="nowNwsLbl">NWS gauge</dt><dd id="nowNws">–</dd>
+        </dl>
+        <small id="nowPeak"></small>
       </div>
     </div>
-    <div class="chart-box" id="chartBox"><svg id="chart" viewBox="0 0 1000 320" role="img" aria-label="Hourly flow from four sources over seven days"></svg><div class="tip" id="tip"></div></div>
-    <p class="note" id="chartNote"></p>
-  </section>
 
-  <form class="ask" id="ask">
-    <label for="q" class="note">Ask about the river data</label>
-    <textarea id="q" placeholder="For example: why did the USGS gauge jump to 5,000 cfs last night while the model stayed low?"></textarea>
-    <div class="ask-row" id="cases"></div>
-    <div class="ask-row">
-      <span class="note" id="modeNote"></span>
-      <button class="btn-quiet" id="cancelRun" type="button" hidden>Cancel</button>
-      <button class="go" id="go" type="submit">Investigate</button>
-    </div>
-    <p class="status-line" id="status" role="status" aria-live="polite"></p>
-  </form>
+    <section class="deep" id="deep" hidden aria-labelledby="deepTitle">
+      <p class="eyebrow">Investigate in depth</p>
+      <h2 id="deepTitle">Ask the agent team why</h2>
+      <p class="intro">A planner proposes explanations, an investigator tests each one with SQL on the data in Zetaris, a critic challenges the findings and sends work back, and a reporter writes an answer you can check. It takes about 3–5 minutes.</p>
+      <ol class="steps" aria-label="The agents"><li>Planner</li><li>Investigator</li><li>Critic</li><li>Reporter</li><li>Fact-checker</li></ol>
+      <form class="ask" id="ask">
+        <label for="q" class="sr-only">Your question about this river</label>
+        <textarea id="q" placeholder="For example: why did the USGS gauge jump to 5,000 cfs last night while the model stayed low?"></textarea>
+        <div class="ask-row" id="cases"></div>
+        <div class="ask-row">
+          <span class="note" id="modeNote"></span>
+          <button class="btn-quiet" id="cancelRun" type="button" hidden>Cancel</button>
+          <button class="go" id="go" type="submit">Investigate</button>
+        </div>
+        <p class="status-line" id="status" role="status" aria-live="polite"></p>
+      </form>
 
-  <div class="grid">
-    <section class="panel" aria-labelledby="invTitle">
-      <h2 id="invTitle">Investigation</h2>
-      <ol class="timeline" id="timeline"><li class="empty">Ask a question or pick a case to start. The planner, investigator and critic will work here, step by step.</li></ol>
+      <div id="invArea" hidden>
+        <div class="grid">
+          <section class="panel" aria-labelledby="invTitle">
+            <h2 id="invTitle">The investigation, step by step</h2>
+            <ol class="timeline" id="timeline"><li class="empty">The planner, investigator and critic work here, step by step.</li></ol>
+          </section>
+          <div style="display:grid; gap:18px; align-content:start; min-width:0">
+            <section class="panel" aria-labelledby="hypTitle">
+              <h2 id="hypTitle">Explanations under test</h2>
+              <div id="hyps" class="empty">None yet.</div>
+            </section>
+            <section class="panel" aria-labelledby="rcTitle">
+              <h2 id="rcTitle">Which model answered each step</h2>
+              <table class="receipts"><thead><tr><th>Step</th><th>Model (Meterless receipt)</th><th>Time</th></tr></thead><tbody id="receipts"><tr><td colspan="3" class="empty">No model calls yet.</td></tr></tbody></table>
+            </section>
+            <section class="panel" aria-labelledby="memTitle">
+              <h2 id="memTitle">What earlier investigations found</h2>
+              <div id="memory" class="memory">Loading…</div>
+            </section>
+          </div>
+        </div>
+        <section class="report-panel" aria-labelledby="repTitle">
+          <div class="panel-head">
+            <h2 id="repTitle">Report</h2>
+            <button type="button" class="btn-quiet" id="dlReport" disabled>Download report</button>
+          </div>
+          <div id="report" class="report empty">The explanation appears here when the investigation finishes.</div>
+        </section>
+      </div>
     </section>
-
-    <div style="display:grid; gap:18px; align-content:start; min-width:0">
-      <section class="panel" aria-labelledby="hypTitle">
-        <h2 id="hypTitle">Explanations under test</h2>
-        <div id="hyps" class="empty">None yet.</div>
-      </section>
-      <section class="panel" aria-labelledby="memTitle">
-        <h2 id="memTitle">What earlier investigations found</h2>
-        <div id="memory" class="memory">Loading…</div>
-      </section>
-      <section class="panel" aria-labelledby="rcTitle">
-        <h2 id="rcTitle">Which model answered each step</h2>
-        <table class="receipts"><thead><tr><th>Step</th><th>Model (Meterless receipt)</th><th>Time</th></tr></thead><tbody id="receipts"><tr><td colspan="3" class="empty">No model calls yet.</td></tr></tbody></table>
-      </section>
-    </div>
-  </div>
-
-  <section class="panel" aria-labelledby="repTitle" style="margin-bottom:18px">
-    <div class="panel-head">
-      <h2 id="repTitle">Report for the forecaster</h2>
-      <button type="button" class="go" id="dlReport" disabled>Download report</button>
-    </div>
-    <div id="report" class="report empty">The explanation appears here when the investigation finishes.</div>
-  </section>
   </div>
 
   <section class="rivers" aria-labelledby="rivTitle">
     <div class="rivers-head">
-      <h2 id="rivTitle">Which rivers near here have the most conflicting numbers?</h2>
-      <div class="tools">
-        <button type="button" class="btn-quiet" id="scan">Compare the 8 gauges nearest the map centre</button>
+      <div>
+        <p class="eyebrow">Near you</p>
+        <h2 id="rivTitle">Which rivers near here have the most conflicting numbers?</h2>
       </div>
+      <button type="button" class="btn-quiet" id="scan">Compare the 8 gauges nearest the map centre</button>
     </div>
-    <p class="note" id="scanNote">If you look a river up online you may find three different flows for it: the USGS gauge, the National Water Model and the NWS gauge. This compares them hour by hour over the last 48 hours for the 8 gauges closest to the centre of the map, and ranks the rivers where they disagree most. A gap of 7× means the highest reading is 7 times the lowest: before trusting any one number there, run a River check. It also shows researchers where the national model is off right now. The first comparison of a gauge takes a minute while its sources are registered in Zetaris.</p>
+    <p class="note" id="scanNote">Compares USGS, the National Water Model and the NWS hour by hour over the last 48 hours for the 8 gauges nearest the centre of the map, and ranks where they disagree most. A gap of 7× means the highest reading is 7 times the lowest: before trusting any one number there, run a River check. The first comparison of a gauge takes a minute while its sources are registered in Zetaris.</p>
     <table class="rank" id="rank" hidden><thead><tr><th>River and gauge</th><th class="num">Usual gap</th><th class="num">Gap now</th><th class="num hide-sm">Worst hour</th></tr></thead><tbody></tbody></table>
   </section>
 
-  <footer>Data through Zetaris from USGS NWIS, NOAA NWPS, the NOAA National Water Model and Open-Meteo. Models: NVIDIA Nemotron through Meterless Nightshift. Shared state and memory: Meterless World Model.</footer>
-</div>
+  <section class="how" aria-label="How RiverTruth works">
+    <div><h3>One SQL view of four agencies</h3><p>USGS, NOAA NWS, the National Water Model and Open-Meteo rainfall are registered in Zetaris and joined hour by hour, in common units.</p></div>
+    <div><h3>Numbers from code, words from Nemotron</h3><p>Every number is computed in code. NVIDIA Nemotron models, served through Meterless Nightshift, only put it into words, and a number guard checks them.</p></div>
+    <div><h3>Agents with a shared memory</h3><p>The agent team writes every explanation, check and finding to the Meterless World Model, with who said it and when, and remembers only what the critic approved.</p></div>
+  </section>
+
+  <footer>Data through Zetaris from USGS NWIS, NOAA NWPS, the NOAA National Water Model and Open-Meteo. Models: NVIDIA Nemotron through Meterless Nightshift. Shared state and memory: Meterless World Model. Map data © OpenStreetMap contributors. A heads-up from public data, not a safety clearance.</footer>
+</main>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -607,7 +664,8 @@ const FLOOD = { no_flooding: "#2C6E8F", action: "#C9A227", minor: "#D9822B", mod
 const fmtCfs = (v) => v === null || v === undefined ? "–" : `${Math.round(v).toLocaleString()} cfs`;
 function initMap() {
   if (!window.L) { $("map").innerHTML = '<p class="note" style="padding:12px">The map could not load (offline?). Type a gauge code above instead.</p>'; return; }
-  map = L.map("map", { zoomControl: true, preferCanvas: true }).setView([38.5, -96.5], window.innerWidth < 700 ? 3 : 4);
+  map = L.map("map", { zoomControl: false, preferCanvas: true }).setView([38.5, -96.5], window.innerWidth < 700 ? 3 : 4);
+  if (L.control && L.control.zoom) L.control.zoom({ position: "bottomright" }).addTo(map);  // the search box sits top left
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 16, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
   layer = L.layerGroup().addTo(map);
   let t = null;
@@ -731,13 +789,20 @@ function renderCheck(d) {
     </dl>`}
     ${d.caution ? `<div class="caution">${esc(d.caution)}</div>` : ""}
     ${learned}
-    <div class="row"><button type="button" class="btn-quiet" id="cDeep">Investigate in depth (about 2 min)</button></div>
+    <div class="row"><button type="button" class="btn-quiet" id="cDeep">Ask the agent team why (about 3–5 min)</button></div>
     <div class="foot">Numbers computed in code from Zetaris (USGS, NWS, National Water Model, Open-Meteo). Words: ${esc(d.written_by || "")}${d.written_by && d.written_by.includes("/") ? " via Meterless Nightshift" : ""}. ${links ? "Official pages: " + links : ""}</div>`;
   if ($("cDeep")) $("cDeep").addEventListener("click", async () => {
     await selectSite(d.site.lid);
-    $("ask").scrollIntoView({ behavior: "smooth", block: "start" });
+    openDeep();
   });
   if (map && d.site && d.site.lat && !gaugeIndex.has(d.site.lid)) map.setView([d.site.lat, d.site.lon], 10);
+}
+
+// ---------- the agent team: opened on request, its panels shown once a run starts
+function openDeep() {
+  $("deep").hidden = false;
+  $("deep").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("q").focus({ preventScroll: true });
 }
 
 // ---------- live investigation
@@ -856,6 +921,7 @@ $("ask").addEventListener("submit", async (ev) => {
   const q = $("q").value.trim();
   if (!q) { $("status").innerHTML = '<span class="error">Type a question or pick a case first.</span>'; return; }
   $("go").disabled = true; showCancel(true); resetRun();
+  $("invArea").hidden = false;
   const r = await postJSON("/api/run", { question: q, site });
   const d = await r.json();
   if (!r.ok) { $("status").innerHTML = `<span class="error">${esc(d.error)}</span>`; $("go").disabled = false; showCancel(false); return; }
@@ -868,7 +934,7 @@ $("ask").addEventListener("submit", async (ev) => {
   await Promise.all([loadCases(), loadStatus()]);  // nothing is selected until the person picks a gauge
   pollRadar();
   const s = await (await fetch("/api/status")).json();
-  if (s.running) { $("go").disabled = true; showCancel(true); resetRun(); listen(); }
+  if (s.running) { await selectSite(site); $("deep").hidden = false; $("invArea").hidden = false; $("go").disabled = true; showCancel(true); resetRun(); listen(); }
 })();
 </script>
 </body>

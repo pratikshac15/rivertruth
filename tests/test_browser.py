@@ -84,5 +84,68 @@ class GaugePage(unittest.TestCase):
             b.close()
 
 
+@unittest.skipIf(sync_playwright is None, "playwright not installed")
+class Design(unittest.TestCase):
+    """The product design: one quick answer first, the agent team one click away, one visual system, phone-sized too."""
+
+    _page = GaugePage._page
+    _check = GaugePage._check
+
+    def test_first_screen_shows_the_promise_and_sponsors_and_no_empty_panels(self):
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b, page, errors = self._page(p, s.url)
+            head = page.text_content("header")
+            for name in ("Zetaris", "Meterless", "Nemotron"):
+                self.assertIn(name, head)
+            self.assertFalse(page.is_visible("#deep"), "agent-team section waits for a click")
+            self.assertFalse(page.is_visible("#invArea"), "no empty investigation panels")
+            self.assertFalse(page.is_visible("#report"))
+            self.assertEqual(page.text_content("#reachName").strip(), "", "no river named before one is picked")
+            box, tools = page.locator("#map").bounding_box(), page.locator("#locate").bounding_box()
+            self.assertTrue(box["x"] <= tools["x"] and tools["y"] + tools["height"] <= box["y"] + box["height"]
+                            and tools["y"] >= box["y"], "search sits on the map")
+            self.assertEqual(errors, [])
+            b.close()
+
+    def test_the_agent_team_opens_on_request_and_shows_its_work_when_running(self):
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b, page, errors = self._page(p, s.url)
+            self._check(page, "TODA1")
+            self.assertIn("3–5 min", page.text_content("#cDeep"))
+            self.assertFalse(page.is_visible("#deep"))
+            page.click("#cDeep")
+            page.wait_for_selector("#deep", state="visible", timeout=5000)
+            self.assertFalse(page.is_visible("#invArea"), "panels appear once a run starts")
+            page.fill("#q", "Why did the sources disagree?")
+            page.click("#go")
+            page.wait_for_selector("#invArea", state="visible", timeout=5000)
+            page.wait_for_function("() => document.getElementById('report').textContent.includes('release')", timeout=30000)
+            self.assertEqual(errors, [])
+            b.close()
+
+    def test_one_typeface_for_the_answer(self):
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b, page, errors = self._page(p, s.url)
+            self._check(page, "CKLA1")
+            body = page.evaluate("getComputedStyle(document.body).fontFamily")
+            head = page.evaluate("getComputedStyle(document.querySelector('#cOut .headline')).fontFamily")
+            self.assertEqual(head, body)
+            b.close()
+
+    def test_phone_width_has_no_sideways_scrolling(self):
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={"width": 390, "height": 844})
+            page.route("**/fonts.g*/**", lambda r: r.abort())
+            page.route("**/leaflet.min.css", lambda r: r.fulfill(body="", content_type="text/css"))
+            page.route("**/leaflet.min.js", lambda r: r.fulfill(path=os.path.join(HERE, "assets", "leaflet_mock.js"),
+                                                                content_type="application/javascript"))
+            page.goto(s.url)
+            page.wait_for_function("window.__markers && window.__markers.length >= 6", timeout=20000)
+            self._check(page, "TODA1")
+            self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 390)
+            b.close()
+
+
 if __name__ == "__main__":
     unittest.main()
