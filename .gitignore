@@ -1,0 +1,20 @@
+# secrets
+.env
+.env.local
+# python
+__pycache__/
+*.pyc
+.venv/
+# os
+.DS_Store
+# run logs (sample logs are committed under output_examples/)
+logs/
+
+# World Model runtime store (rebuilt from runs; see data/sample for frozen demo state)
+data/world/
+
+# local development history (old runs, backups) and runtime state
+dev_archive/
+data/radar_last.json
+data/gauges_us.json
+data/sample/

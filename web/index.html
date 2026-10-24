@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="rt-token" content="__RT_TOKEN__">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RiverTruth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --paper: #E9EEEC;
+  --sheet: #F7F9F8;
+  --ink: #1D2B33;
+  --ink-2: #4A5A63;
+  --rule: #C9D3D0;
+  --usgs: #2C6E8F;
+  --nwm: #7A5BA6;
+  --nws: #B07D2B;
+  --rain: #8DB8C9;
+  --critic: #A8443A;
+  --ok: #3E7D55;
+  --radius-lg: 14px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); }
+body { font: 15px/1.5 "Public Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+a { color: var(--usgs); }
+:focus-visible { outline: 3px solid var(--usgs); outline-offset: 2px; }
+
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+
+/* Masthead: the name, what it does, and where it looks */
+header { padding: 22px 0 6px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; }
+header h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+header h1 small { display: block; font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-top: 2px; }
+.reach { color: var(--ink-2); font-size: 14px; }
+
+/* Why it matters + live disagreement readout */
+.sel-title { margin: 0 0 8px; font-size: 20px; }
+.why { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; margin: 10px 0 4px; align-items: stretch; }
+@media (max-width: 900px) { .why { grid-template-columns: 1fr; } }
+.why p { margin: 0 0 8px; max-width: 70ch; }
+.why p:last-child { margin-bottom: 0; }
+.now { background: var(--ink); color: #fff; border-radius: var(--radius-lg); padding: 14px 16px; }
+.now .big { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 0 8px; }
+.now dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 14px; }
+.now dt { color: #C9D6DB; }
+.now dd { margin: 0; text-align: right; font-weight: 600; }
+.now .src-usgs { border-left: 3px solid #7FB6D1; padding-left: 6px; }
+.now .src-nwm { border-left: 3px solid #B9A2DA; padding-left: 6px; }
+.now .src-nws { border-left: 3px solid #E0B66B; padding-left: 6px; }
+.now small { display: block; color: #C9D6DB; margin-top: 8px; font-size: 12.5px; }
+abbr.term { text-decoration: underline dotted var(--ink-2); text-underline-offset: 3px; cursor: help; }
+
+/* River check: map + plain-language card */
+.check { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 8px 0 14px; }
+.card dl { grid-template-columns: 1fr 1fr; column-gap: 28px; }
+@media (max-width: 800px) { .card dl { grid-template-columns: 1fr; } }
+.card .headline { max-width: 60ch; }
+.mapbox { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.maptools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.maptools input { width: 8.5em; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 7px 10px; font: inherit; text-transform: uppercase; }
+.maptools input::placeholder { text-transform: none; }
+#map { height: 520px; border-radius: 10px; border: 1px solid var(--rule); background: #DCE5E3; }
+@media (max-width: 600px) { #map { height: 340px; } }
+.maplegend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); }
+.maplegend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: -1px; }
+.card { background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.card h2 { margin: 0; font-size: 18px; }
+.card .gname { font-weight: 700; font-size: 16px; }
+.card .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.card select, .card input[type=text] { border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 7px 10px; font: inherit; background: #fff; }
+.card input[type=text] { flex: 1; min-width: 9em; }
+.card .headline { font-family: "Source Serif 4", Georgia, serif; font-size: 21px; line-height: 1.3; font-weight: 600; margin: 4px 0 0; }
+.card dl { margin: 0; display: grid; gap: 8px; }
+.card dt { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.card dd { margin: 0; }
+.card .seen { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
+.alert { background: #F8E1DE; border-left: 4px solid var(--critic); color: #5A1E17; font-weight: 600; padding: 10px 12px; border-radius: 6px; }
+.caution { background: #FBF3E4; border-left: 4px solid var(--nws); padding: 8px 10px; border-radius: 6px; font-size: 14px; }
+.learned { background: var(--sheet); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.card .foot { font-size: 12.5px; color: var(--ink-2); }
+.btn-main { border: 0; background: var(--ink); color: #fff; border-radius: var(--radius-sm); padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn-main[disabled] { opacity: .55; cursor: progress; }
+.leaflet-popup-content { font: 14px/1.4 "Public Sans", system-ui, sans-serif; }
+.leaflet-popup-content b { display: block; margin-bottom: 2px; }
+
+/* Rivers: where do the sources disagree right now? */
+.rivers { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px; margin: 14px 0 0; }
+.rivers-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+.rivers-head h2 { margin: 0; font-size: 18px; }
+.rivers-head .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rivers-head input { width: 9.5em; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 7px 10px; font: inherit; text-transform: uppercase; }
+.rivers-head input::placeholder { text-transform: none; }
+.btn-quiet { border: 1px solid var(--ink-2); background: #fff; color: var(--ink); border-radius: var(--radius-sm); padding: 7px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn-quiet[disabled] { opacity: .5; cursor: progress; }
+table.rank { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+table.rank th, table.rank td { text-align: left; padding: 7px 8px; border-top: 1px solid var(--rule); vertical-align: middle; }
+table.rank th { border-top: 0; color: var(--ink-2); font-weight: 600; font-size: 13px; }
+table.rank td.num { text-align: right; font-weight: 600; white-space: nowrap; }
+table.rank tr.sel { background: #E3ECEF; }
+table.rank tr[data-lid] { cursor: pointer; }
+table.rank tr[data-lid]:hover { background: #EDF2F1; }
+.kind { font-size: 12px; color: var(--ink-2); }
+.bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--critic); vertical-align: middle; margin-left: 6px; opacity: .75; }
+@media (max-width: 700px) { table.rank .hide-sm { display: none; } }
+
+/* Ask */
+.ask { margin: 14px 0 18px; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 14px; }
+.ask textarea { width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  padding: 10px 12px; font: inherit; color: var(--ink); background: #fff; }
+.ask-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.case { border: 1px solid var(--rule); background: #fff; color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.case:hover { border-color: var(--ink-2); }
+.go { margin-left: auto; background: var(--ink); color: #fff; border: 0; border-radius: var(--radius-sm); padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+.go[disabled] { opacity: .55; cursor: progress; }
+.note { font-size: 13px; color: var(--ink-2); }
+.error { color: var(--critic); }
+
+/* Hydrograph hero */
+.hydro { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px 16px 8px; }
+.hydro-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; }
+.hydro-head h2 { margin: 0; font-size: 18px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--c); }
+.chart-box { position: relative; margin-top: 8px; }
+.chart-box svg { display: block; width: 100%; height: auto; }
+.chart-box .tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  padding: 6px 8px; font-size: 12.5px; line-height: 1.4; box-shadow: 0 2px 8px rgba(29,43,51,.12); display: none; white-space: nowrap; }
+
+/* Investigation */
+.grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; margin: 18px 0; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+section.panel { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 16px; min-width: 0; }
+section.panel h2 { margin: 0 0 10px; font-size: 17px; }
+.panel-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.panel-head h2 { margin: 0; }
+.empty { color: var(--ink-2); font-size: 14px; }
+
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline > li { position: relative; padding: 0 0 14px 22px; border-left: 2px solid var(--rule); margin-left: 6px; }
+.timeline > li::before { content: ""; position: absolute; left: -7px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--sheet); border: 2px solid var(--ink-2); }
+.timeline > li.critic::before { border-color: var(--critic); }
+.timeline > li.done::before { background: var(--ink-2); }
+.who { font-weight: 600; }
+.critic .who { color: var(--critic); }
+.check { margin-top: 6px; padding: 8px 10px; background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-sm); }
+.check .purpose { font-weight: 500; }
+.finding { margin-top: 4px; font-size: 14px; }
+.stance { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px; margin-right: 6px; background: #E4E8E7; color: var(--ink-2); }
+.stance.supports, .stance.supported { background: #DDEBE1; color: var(--ok); }
+.stance.refutes, .stance.refuted { background: #F2DEDB; color: var(--critic); }
+details { margin-top: 4px; font-size: 13px; }
+details summary { cursor: pointer; color: var(--ink-2); }
+pre.sql { white-space: pre-wrap; word-break: break-word; background: #F0F3F2; border-radius: var(--radius-sm); padding: 8px; margin: 6px 0 0; font: 12.5px/1.45 ui-monospace, Menlo, monospace; }
+.issues { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
+.issues li { margin-bottom: 4px; }
+
+.hyp { padding: 10px 0; border-top: 1px solid var(--rule); }
+.hyp:first-child { border-top: 0; padding-top: 0; }
+.hyp .claim { font-size: 14px; margin: 4px 0; }
+.trail { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.trail b { font-weight: 600; }
+
+table.receipts { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.receipts th, table.receipts td { text-align: left; padding: 5px 6px; border-top: 1px solid var(--rule); vertical-align: top; }
+table.receipts th { font-weight: 600; color: var(--ink-2); border-top: 0; }
+.model { word-break: break-all; }
+
+.memory { font-size: 13.5px; white-space: pre-wrap; color: var(--ink-2); max-height: 220px; overflow: auto; }
+
+/* Report reads like a hydrology memo */
+.report { font-family: "Source Serif 4", Georgia, serif; font-size: 17px; line-height: 1.6; max-width: 76ch; }
+.report h2 { font-family: "Public Sans", sans-serif; font-size: 18px; margin: 22px 0 6px; }
+.report h2:first-child { margin-top: 0; }
+.report table { border-collapse: collapse; font-size: 15px; }
+.report td, .report th { border: 1px solid var(--rule); padding: 4px 8px; }
+
+.status-line { font-size: 13px; color: var(--ink-2); margin: 6px 0 0; min-height: 1.5em; }
+footer { color: var(--ink-2); font-size: 13px; padding: 10px 0 30px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>RiverTruth<small>Which river number to trust, and what the river is doing that a forecast won't tell you.</small></h1>
+    <div class="reach" id="reachName"></div>
+  </header>
+
+  <section class="check" aria-label="River check">
+    <div class="mapbox">
+      <div class="maptools">
+        <button type="button" class="btn-main" id="locate">Use my location</button>
+        <span class="note">or pan the map, or type an NWS gauge code</span>
+        <input id="lidIn" placeholder="e.g. CKLA1" maxlength="6" autocomplete="off" aria-label="NWS gauge code">
+        <button type="button" class="btn-quiet" id="lookup">Go</button>
+      </div>
+      <div id="map" role="region" aria-label="Map of river gauges"></div>
+      <div class="maplegend"><span style="--c:#2C6E8F">normal</span><span style="--c:#C9A227">action stage</span><span style="--c:#D9822B">minor flood</span><span style="--c:#C0392B">moderate</span><span style="--c:#7B2D8E">major</span><span style="--c:#9AA7AD">no current reading</span></div>
+      <p class="note" id="mapNote" style="margin:0">Every NWS river gauge in the US. Gauges in view are found with SQL over NOAA's gauge catalog in Zetaris.</p>
+    </div>
+    <div class="card" id="card" aria-live="polite">
+      <h2>River check</h2>
+      <div class="gname" id="cName">Pick a gauge on the map</div>
+      <div class="note" id="cNow">Click a dot near where you'll be. You'll get which number to trust there, what the river has been doing this week, and how it is right now.</div>
+      <div class="row">
+        <select id="cAct" aria-label="What are you planning?">
+          <option>fishing</option><option>kayaking or canoeing</option><option>swimming</option><option>boating</option><option>camping by the river</option><option>just curious</option>
+        </select>
+        <input type="text" id="cWhen" value="this evening" aria-label="When?">
+        <button type="button" class="btn-main" id="cGo" disabled>Check this river</button>
+      </div>
+      <div id="cOut"></div>
+    </div>
+  </section>
+
+  <div id="gaugeDetail" hidden>
+  <section class="why" aria-label="The selected gauge">
+    <div>
+      <h2 class="sel-title" id="selTitle">Black Warrior River at Tuscaloosa and Northport, Alabama</h2>
+      <p>Every river gauge on the map has up to four sources: a USGS gauge measures the flow, the National Water Model simulates it, the National Weather Service gauge reports its own number, and rainfall is tracked separately. They often disagree, sometimes by more than 20 times, and it is hard to know which to trust.</p>
+      <p>The River check above answers that in seconds from numbers computed in code. For a full explanation, a team of AI agents investigates: it tests each possible cause against the data in Zetaris, challenges its own findings, and gives an answer you can check.</p>
+      <p class="note" id="selNote">On this river, flow at Northport has jumped from about 150 to over 5,000 cfs within an hour at 9 PM every evening this week, with no rain: water released from a hydropower dam upstream. Anyone on the water below a dam would feel that surge, even when the model still shows a calm river.</p>
+    </div>
+    <div class="now" aria-live="polite">
+      <div class="note" style="color:#C9D6DB" id="nowWhen">Latest hour with all sources</div>
+      <div class="big" id="nowBig">Loading…</div>
+      <dl>
+        <dt class="src-usgs">USGS measured</dt><dd id="nowUsgs">–</dd>
+        <dt class="src-nwm">National Water Model</dt><dd id="nowNwm">–</dd>
+        <dt class="src-nws" id="nowNwsLbl">NWS gauge</dt><dd id="nowNws">–</dd>
+      </dl>
+      <small id="nowPeak"></small>
+    </div>
+  </section>
+
+  <section class="hydro" aria-labelledby="hydroTitle">
+    <div class="hydro-head">
+      <h2 id="hydroTitle">Four agencies, one river: the last 7 days</h2>
+      <div class="legend">
+        <span style="--c: var(--usgs)" id="lgUsgs">USGS measured flow, Northport</span>
+        <span style="--c: var(--nwm)" id="lgNwm">National Water Model, simulated</span>
+        <span style="--c: var(--nws)" id="lgNws">NWS flow, Oliver Lock and Dam</span>
+        <span style="--c: var(--nws)" id="lgLevel" hidden>Water level</span>
+        <span style="--c: var(--rain)">Rain (mm)</span>
+      </div>
+    </div>
+    <div class="chart-box" id="chartBox"><svg id="chart" viewBox="0 0 1000 320" role="img" aria-label="Hourly flow from four sources over seven days"></svg><div class="tip" id="tip"></div></div>
+    <p class="note" id="chartNote"></p>
+  </section>
+
+  <form class="ask" id="ask">
+    <label for="q" class="note">Ask about the river data</label>
+    <textarea id="q" placeholder="For example: why did the USGS gauge jump to 5,000 cfs last night while the model stayed low?"></textarea>
+    <div class="ask-row" id="cases"></div>
+    <div class="ask-row">
+      <span class="note" id="modeNote"></span>
+      <button class="btn-quiet" id="cancelRun" type="button" hidden>Cancel</button>
+      <button class="go" id="go" type="submit">Investigate</button>
+    </div>
+    <p class="status-line" id="status" role="status" aria-live="polite"></p>
+  </form>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="invTitle">
+      <h2 id="invTitle">Investigation</h2>
+      <ol class="timeline" id="timeline"><li class="empty">Ask a question or pick a case to start. The planner, investigator and critic will work here, step by step.</li></ol>
+    </section>
+
+    <div style="display:grid; gap:18px; align-content:start; min-width:0">
+      <section class="panel" aria-labelledby="hypTitle">
+        <h2 id="hypTitle">Explanations under test</h2>
+        <div id="hyps" class="empty">None yet.</div>
+      </section>
+      <section class="panel" aria-labelledby="memTitle">
+        <h2 id="memTitle">What earlier investigations found</h2>
+        <div id="memory" class="memory">Loading…</div>
+      </section>
+      <section class="panel" aria-labelledby="rcTitle">
+        <h2 id="rcTitle">Which model answered each step</h2>
+        <table class="receipts"><thead><tr><th>Step</th><th>Model (Meterless receipt)</th><th>Time</th></tr></thead><tbody id="receipts"><tr><td colspan="3" class="empty">No model calls yet.</td></tr></tbody></table>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="repTitle" style="margin-bottom:18px">
+    <div class="panel-head">
+      <h2 id="repTitle">Report for the forecaster</h2>
+      <button type="button" class="go" id="dlReport" disabled>Download report</button>
+    </div>
+    <div id="report" class="report empty">The explanation appears here when the investigation finishes.</div>
+  </section>
+  </div>
+
+  <section class="rivers" aria-labelledby="rivTitle">
+    <div class="rivers-head">
+      <h2 id="rivTitle">Which rivers near here have the most conflicting numbers?</h2>
+      <div class="tools">
+        <button type="button" class="btn-quiet" id="scan">Compare the 8 gauges nearest the map centre</button>
+      </div>
+    </div>
+    <p class="note" id="scanNote">If you look a river up online you may find three different flows for it: the USGS gauge, the National Water Model and the NWS gauge. This compares them hour by hour over the last 48 hours for the 8 gauges closest to the centre of the map, and ranks the rivers where they disagree most. A gap of 7× means the highest reading is 7 times the lowest: before trusting any one number there, run a River check. It also shows researchers where the national model is off right now. The first comparison of a gauge takes a minute while its sources are registered in Zetaris.</p>
+    <table class="rank" id="rank" hidden><thead><tr><th>River and gauge</th><th class="num">Usual gap</th><th class="num">Gap now</th><th class="num hide-sm">Worst hour</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <footer>Data through Zetaris from USGS NWIS, NOAA NWPS, the NOAA National Water Model and Open-Meteo. Models: NVIDIA Nemotron through Meterless Nightshift. Shared state and memory: Meterless World Model.</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const RT_TOKEN = document.querySelector('meta[name="rt-token"]').content;
+const postJSON = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-RiverTruth-Token": RT_TOKEN }, body: JSON.stringify(body) });
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let source, cases = [], reportMd = "", site = "TODA1", siteQuestion = null;
+
+// ---------- hydrograph (inline SVG, no libraries)
+async function loadHydrograph() {
+  $("chartNote").textContent = site === "TODA1" ? "" : "Loading this gauge's data from Zetaris…";
+  const r = await fetch("/api/hydrograph?site=" + encodeURIComponent(site));
+  const d = await r.json();
+  if (d.error) { $("chartNote").textContent = "Could not load data from Zetaris: " + d.error; return false; }
+  $("gaugeDetail").hidden = false;
+  const st = d.site || {};
+  $("reachName").textContent = st.name || site;
+  $("lgUsgs").textContent = "USGS measured flow" + (st.flagship ? ", Northport" : ` (${st.usgs_label || "USGS"})`);
+  $("lgNws").textContent = st.flagship ? "NWS flow, Oliver Lock and Dam" : `NWS flow (${st.nws_label || "NWS"})`;
+  siteQuestion = d.question;
+  $("cases").style.display = st.flagship ? "" : "none";
+  $("selTitle").textContent = st.name || site;
+  $("nowNwsLbl").textContent = st.flagship ? "NWS at the dam" : (st.nws_label || "NWS gauge");
+  if (st.flagship) $("selNote").textContent = FLAGSHIP_NOTE; else if (lastCheck && lastCheck.site && lastCheck.site.lid === st.lid) $("selNote").textContent = lastCheck.card.pattern || "";
+  else $("selNote").textContent = "";
+  tzOff = st.tz_offset ?? -5; tzName = st.flagship ? "Central" : (st.tz_label || "local");
+  nwsName = st.flagship ? "NWS Oliver" : (st.nws_label || "NWS"); riverName = st.name || site;
+  if (!st.flagship && d.question) $("q").value = d.question;
+  const rows = d.rows.map((r) => ({ t: r[0], usgs: num(r[1]), nwm: num(r[2]), nws: num(r[3]), rain: num(r[4]), level: num(r[5]) }));
+  chartMode = d.has_flow ? "flow" : rows.some((r) => r.level !== null) ? "level" : "none";
+  for (const id of ["lgUsgs", "lgNwm", "lgNws"]) $(id).hidden = chartMode !== "flow";
+  $("lgLevel").hidden = chartMode !== "level";
+  $("lgLevel").textContent = `Water level (${st.nws_label || "NWS gauge"})`;
+  $("hydroTitle").textContent = chartMode === "level" ? "Water level: the last 7 days" : "Four agencies, one river: the last 7 days";
+  drawChart(rows);
+  showNow(rows);
+  return true;
+}
+function showNow(rows) {
+  $("nowPeak").textContent = "";
+  if (chartMode !== "flow") {
+    const last = [...rows].reverse().find((r) => r.level !== null);
+    $("nowUsgs").textContent = "–"; $("nowNwm").textContent = "–";
+    if (!last) {
+      $("nowWhen").textContent = "This week"; $("nowBig").textContent = "No data this week"; $("nowNws").textContent = "–";
+      return;
+    }
+    $("nowWhen").textContent = `${cdtLabel(last.t)} ${tzName}, the latest reading`;
+    $("nowBig").textContent = `Water level ${last.level.toFixed(2)} ft`;
+    $("nowNws").textContent = `${last.level.toFixed(2)} ft`;
+    $("nowPeak").textContent = "This gauge reports water level only, so there are no flows to compare.";
+    return;
+  }
+  const has = (r) => [r.usgs, r.nwm, r.nws].filter((v) => v !== null);
+  const full = [...rows].reverse().find((r) => has(r).length === 3) || [...rows].reverse().find((r) => has(r).length === 2);
+  const f = (v) => (v === null ? "not published" : Math.round(v).toLocaleString() + " cfs");
+  $("nowPeak").textContent = "";
+  if (!full) {
+    $("nowWhen").textContent = "Latest hour";
+    $("nowBig").textContent = "Only one source here";
+    const last = rows[rows.length - 1] || {};
+    $("nowUsgs").textContent = f(last.usgs ?? null); $("nowNwm").textContent = f(last.nwm ?? null); $("nowNws").textContent = f(last.nws ?? null);
+    return;
+  }
+  const n = has(full).length;
+  const vals = has(full).map((v) => Math.max(v, 20));
+  const ratio = Math.max(...vals) / Math.min(...vals);
+  $("nowWhen").textContent = `${cdtLabel(full.t)} ${tzName}, the latest hour ${n === 3 ? "all three sources have" : "two sources have"} published`;
+  $("nowBig").textContent = ratio >= 1.5 ? `Sources differ by ${ratio.toFixed(1)}×` : "Sources roughly agree";
+  $("nowUsgs").textContent = f(full.usgs); $("nowNwm").textContent = f(full.nwm); $("nowNws").textContent = f(full.nws);
+  let worst = null;
+  rows.forEach((r) => { const v = has(r); if (v.length >= 2) { const w = v.map((x) => Math.max(x, 20)); const q = Math.max(...w) / Math.min(...w); if (!worst || q > worst.q) worst = { q, r }; } });
+  if (worst && worst.q >= 1.5) $("nowPeak").textContent = `Biggest gap this week: ${worst.q.toFixed(0)}× at ${cdtLabel(worst.r.t)} ${tzName}.`;
+}
+function num(v) { return v === null || v === undefined || v === "" ? null : Number(v); }
+let lastCheck = null, chartMode = "flow";
+const FLAGSHIP_NOTE = "On this river, flow at Northport has jumped from about 150 to over 5,000 cfs within an hour at 9 PM every evening this week, with no rain: water released from a hydropower dam upstream. Anyone on the water below a dam would feel that surge, even when the model still shows a calm river.";
+let tzOff = -5, tzName = "Central", nwsName = "NWS Oliver", riverName = "Black Warrior River at Tuscaloosa and Northport, Alabama";
+function cdt(h) { const t = new Date(h.replace(" ", "T") + ":00Z"); t.setUTCHours(t.getUTCHours() + tzOff); return t; }
+function cdtLabel(h) { const t = cdt(h); const hr = t.getUTCHours(); return `${t.getUTCMonth() + 1}/${t.getUTCDate()} ${hr % 12 || 12} ${hr < 12 ? "AM" : "PM"}`; }
+function drawChart(rows) {
+  const W = 1000, H = 320, L = 58, R = 46, T = 14, B = 34;
+  const withData = rows.filter((r) => (chartMode === "level" ? r.level !== null : [r.usgs, r.nwm, r.nws].some((v) => v !== null)));
+  if (chartMode === "none" || !withData.length) {
+    $("chart").innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="16" fill="${css("--ink-2")}">No data published for this gauge this week</text>`;
+    $("chartNote").textContent = "No data published for this gauge this week, so there is nothing to chart.";
+    return;
+  }
+  const n = rows.length, x = (i) => L + (i / Math.max(n - 1, 1)) * (W - L - R);
+  let lo, hi, unit, keys;
+  if (chartMode === "level") {
+    const v = rows.map((r) => r.level).filter((x) => x !== null);
+    lo = Math.min(...v); hi = Math.max(...v);
+    const pad = Math.max((hi - lo) * 0.1, 0.5); lo -= pad; hi += pad; unit = "ft"; keys = ["level"];
+  } else {
+    const maxFlow = Math.max(1000, ...rows.flatMap((r) => [r.usgs, r.nwm, r.nws].filter((v) => v !== null)));
+    lo = 0; hi = Math.ceil(maxFlow / 2000) * 2000; unit = "cfs"; keys = ["nws", "nwm", "usgs"];
+  }
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const maxRain = Math.max(5, ...rows.map((r) => r.rain || 0));
+  const yr = (v) => (v / maxRain) * (H - T - B) * 0.35;
+  const svg = [];
+  for (let k = 0; k <= 4; k++) {
+    const v = lo + ((hi - lo) * k) / 4;
+    svg.push(`<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#DCE3E1"/>`);
+    svg.push(`<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="12" fill="${css("--ink-2")}">${unit === "ft" ? v.toFixed(1) : Math.round(v).toLocaleString()}</text>`);
+  }
+  svg.push(`<text x="14" y="${T + (H - T - B) / 2}" transform="rotate(-90 14 ${T + (H - T - B) / 2})" text-anchor="middle" font-size="12" fill="${css("--ink-2")}">${unit}</text>`);
+  rows.forEach((r, i) => { if (cdt(r.t).getUTCHours() === 0) {
+    svg.push(`<line x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${H - B}" stroke="#E3E9E7"/>`);
+    const t = cdt(r.t); svg.push(`<text x="${x(i) + 4}" y="${H - B + 18}" font-size="12" fill="${css("--ink-2")}">${t.getUTCMonth() + 1}/${t.getUTCDate()}</text>`);
+  } });
+  const bw = Math.max(1, (W - L - R) / n - 0.5);
+  rows.forEach((r, i) => { if (r.rain) svg.push(`<rect x="${x(i) - bw / 2}" y="${T}" width="${bw}" height="${yr(r.rain)}" fill="${css("--rain")}"/>`); });
+  const path = (key) => { let d = "", pen = false; rows.forEach((r, i) => { const v = r[key]; if (v === null) { pen = false; return; } d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`; pen = true; }); return d; };
+  const style = { nws: `stroke="${css("--nws")}" stroke-width="1.8"`, nwm: `stroke="${css("--nwm")}" stroke-width="2" stroke-dasharray="6 4"`,
+                  usgs: `stroke="${css("--usgs")}" stroke-width="2.4"`, level: `stroke="${css("--nws")}" stroke-width="2.2"` };
+  for (const k of keys) { const d = path(k); if (d) svg.push(`<path d="${d}" fill="none" ${style[k]}/>`); }
+  svg.push(`<line id="cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="${css("--ink")}" stroke-width="1" opacity="0"/>`);
+  svg.push(`<rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" id="hit"/>`);
+  $("chart").innerHTML = svg.join("");
+  const fmt = (v) => (v === null ? "not published" : Math.round(v).toLocaleString() + " cfs");
+  $("hit").addEventListener("mousemove", (ev) => {
+    const box = $("chart").getBoundingClientRect(); const px = ((ev.clientX - box.left) / box.width) * W;
+    const i = Math.min(n - 1, Math.max(0, Math.round(((px - L) / (W - L - R)) * (n - 1)))); const r = rows[i];
+    $("cursor").setAttribute("x1", x(i)); $("cursor").setAttribute("x2", x(i)); $("cursor").setAttribute("opacity", ".35");
+    const tip = $("tip"); tip.style.display = "block";
+    tip.innerHTML = chartMode === "level"
+      ? `<b>${cdtLabel(r.t)} ${tzName}</b><br>Water level ${r.level === null ? "not published" : r.level.toFixed(2) + " ft"}<br>Rain ${r.rain ?? 0} mm`
+      : `<b>${cdtLabel(r.t)} ${tzName}</b><br><span style="color:${css("--usgs")}">USGS measured</span> ${fmt(r.usgs)}<br><span style="color:${css("--nwm")}">National Water Model</span> ${fmt(r.nwm)}<br><span style="color:${css("--nws")}">${esc(nwsName)}</span> ${fmt(r.nws)}<br>Rain ${r.rain ?? 0} mm`;
+    const left = (x(i) / W) * box.width; tip.style.left = Math.min(box.width - tip.offsetWidth - 4, Math.max(0, left + 12)) + "px"; tip.style.top = "8px";
+  });
+  $("hit").addEventListener("mouseleave", () => { $("tip").style.display = "none"; $("cursor").setAttribute("opacity", "0"); });
+  const last = withData[withData.length - 1];
+  $("chartNote").textContent = `Hourly, ${tzName === "Central" ? "Central" : "local (" + tzName + ")"} time. Latest reading ${cdtLabel(last.t)}.` +
+    (chartMode === "level" ? " This gauge reports water level only, not flow." : " Gaps in a line mean that source has not published those hours yet.");
+}
+
+// ---------- plain-language definitions on hover
+const GLOSSARY = [
+  ["cfs", "Cubic feet per second: how much water passes a point each second. 1,000 cfs fills an Olympic pool in about 90 seconds."],
+  ["kcfs", "Thousands of cubic feet per second (1 kcfs = 1,000 cfs)."],
+  ["National Water Model", "NOAA's computer simulation of every US river. It estimates flow rather than measuring it."],
+  ["NWM", "National Water Model: NOAA's computer simulation of river flow. It estimates rather than measures."],
+  ["hydropeaking", "Releasing water through a hydropower dam in pulses when electricity demand is high, which makes river flow jump suddenly."],
+  ["hydro-peaking", "Releasing water through a hydropower dam in pulses when electricity demand is high, which makes river flow jump suddenly."],
+  ["tailwater", "The water just below a dam."],
+  ["pool", "The lake-like stretch of river held back behind a dam."],
+  ["stage", "The height of the water surface at a gauge, in feet."],
+  ["rating curve", "The conversion an agency uses to turn a measured water height into a flow."],
+  ["assimilation", "The model correcting itself with real gauge readings, which arrive with a delay."],
+  ["mass balance", "Water is not created or lost between two nearby gauges, so over a day their average flows should match unless the pool stores or releases water."],
+  ["USGS", "U.S. Geological Survey, which runs the national network of stream gauges that measure river flow."],
+  ["NWS", "National Weather Service, which issues river forecasts and flood warnings."],
+];
+function glossify(root) {
+  // Underline the first use of each term in the report; hovering shows a plain-language definition.
+  const used = new Set();
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement.closest("abbr, pre, code") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+  const queue = []; while (walker.nextNode()) queue.push(walker.currentNode);
+  while (queue.length) {
+    const node = queue.shift();
+    let best = null;
+    for (const [term, def] of GLOSSARY) {
+      if (used.has(term.toLowerCase())) continue;
+      const m = new RegExp(`\\b${term.replace(/[-]/g, "\\-")}\\b`, "i").exec(node.nodeValue);
+      if (m && (!best || m.index < best.m.index)) best = { m, term, def };
+    }
+    if (!best) continue;
+    const after = node.splitText(best.m.index); after.nodeValue = after.nodeValue.slice(best.m[0].length);
+    const ab = document.createElement("abbr"); ab.className = "term"; ab.title = best.def; ab.textContent = best.m[0];
+    node.parentNode.insertBefore(ab, after); used.add(best.term.toLowerCase());
+    queue.unshift(after);  // keep looking for more terms in the rest of this text
+  }
+}
+
+// ---------- tiny Markdown renderer for the report (headings, bold, italics, lists, tables, paragraphs)
+function md(src) {
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>").replace(/`([^`]+)`/g, "<code>$1</code>");
+  const lines = src.replace(/\r/g, "").split("\n"); const out = []; let list = null, para = [];
+  const flush = () => { if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; } if (list) { out.push(`</${list}>`); list = null; } };
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trimEnd();
+    if (!l.trim()) { flush(); continue; }
+    let m;
+    if ((m = /^(#{1,4})\s+(.*)$/.exec(l))) { flush(); out.push(`<h2>${inline(m[2])}</h2>`); continue; }
+    if (/^\s*[-*]{3,}\s*$/.test(l)) { flush(); continue; }
+    if (/^\s*\|/.test(l)) { flush(); const tbl = []; while (i < lines.length && /^\s*\|/.test(lines[i])) { tbl.push(lines[i]); i++; } i--;
+      const cells = (r) => r.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const body = tbl.filter((r) => !/^\s*\|[\s:|-]+\|\s*$/.test(r));
+      out.push("<table>" + body.map((r, k) => `<tr>${cells(r).map((c) => k === 0 ? `<th>${inline(c)}</th>` : `<td>${inline(c)}</td>`).join("")}</tr>`).join("") + "</table>"); continue; }
+    if ((m = /^\s*(?:[-*]|\d+[.)])\s+(.*)$/.exec(l))) { if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; }
+      const kind = /^\s*\d/.test(l) ? "ol" : "ul"; if (list !== kind) { if (list) out.push(`</${list}>`); out.push(`<${kind}>`); list = kind; }
+      out.push(`<li>${inline(m[1])}</li>`); continue; }
+    if (list) { out.push(`</${list}>`); list = null; }
+    para.push(l.trim());
+  }
+  flush(); return out.join("");
+}
+
+// ---------- status + memory
+async function loadStatus() {
+  const s = await (await fetch("/api/status")).json();
+  $("modeNote").textContent = s.sample_mode
+    ? "Sample mode: replaying a recorded investigation, no live services needed."
+    : `Live: data from Zetaris, models ${s.fast_model.split("/").pop()} and ${s.deep_model.split("/").pop()} through Nightshift.`;
+  return s;
+}
+async function loadMemory() {
+  const m = await (await fetch("/api/memory?site=" + encodeURIComponent(site))).json();
+  $("memory").textContent = m.error ? "World Model unavailable: " + m.error : m.text;
+}
+
+// ---------- cases
+async function loadCases() {
+  cases = await (await fetch("/api/cases")).json();
+  $("cases").innerHTML = cases.map((c) => `<button type="button" class="case" data-k="${c.key}">${esc(c.name.replace(/-/g, " "))}</button>`).join("");
+  $("cases").querySelectorAll(".case").forEach((b) => b.addEventListener("click", () => {
+    $("q").value = cases.find((c) => c.key === b.dataset.k).question; $("q").focus();
+  }));
+}
+
+// ---------- rivers: ranking + any gauge
+async function selectSite(lid) {
+  if (!lid) return;
+  site = lid.toUpperCase();
+  document.querySelectorAll("#rank tr[data-lid]").forEach((tr) => tr.classList.toggle("sel", tr.dataset.lid === site));
+  if (site === "TODA1") $("q").value = "";
+  const ok = await loadHydrograph();
+  if (ok) { loadMemory(); $("status").textContent = `Selected ${$("reachName").textContent}. Ask a question or press Investigate.`; }
+}
+function ratio(x) { return x === null || x === undefined ? "–" : (x >= 10 ? Math.round(x) : x.toFixed(1)) + "×"; }
+function renderRank(st) {
+  const rows = st.rows || [];
+  $("rank").hidden = rows.length === 0;
+  const maxT = Math.max(1, ...rows.filter((r) => r.ok).map((r) => r.typical));
+  $("rank").querySelector("tbody").innerHTML = rows.map((r) => r.ok ? `
+    <tr data-lid="${esc(r.lid)}" class="${r.lid === site ? "sel" : ""}" tabindex="0">
+      <td>${esc(r.name)} <span class="kind">${esc(r.lid)}, ${r.regulated ? "dam-regulated" : "free-flowing"}</span></td>
+      <td class="num">${ratio(r.typical)}<span class="bar" style="width:${Math.round(60 * Math.log(r.typical) / Math.log(maxT + 1e-9)) || 2}px"></span></td>
+      <td class="num">${ratio(r.now)}</td>
+      <td class="num hide-sm">${ratio(r.worst)}</td>
+    </tr>` : `<tr><td colspan="4" class="note">${esc(r.lid)}: ${esc(r.note || "unavailable")}</td></tr>`).join("");
+  $("rank").querySelectorAll("tr[data-lid]").forEach((tr) => {
+    const go = () => {
+      const lid = tr.dataset.lid, g = gaugeIndex.get(lid) || { lid, name: tr.querySelector("td").firstChild.textContent.trim() };
+      if (map && g.lat) map.setView([g.lat, g.lon], 10);
+      pickGauge(g); $("cGo").click();
+      $("card").scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    tr.addEventListener("click", go);
+    tr.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  });
+}
+async function pollRadar() {
+  const st = await (await fetch("/api/radar")).json();
+  renderRank(st);
+  if (st.status === "scanning") {
+    $("scanNote").textContent = `Scanning: ${st.done} of ${st.total} gauges registered and checked in Zetaris…`;
+    setTimeout(pollRadar, 2000);
+  } else if (st.status === "done") {
+    $("scan").disabled = false;
+    const when = st.at ? ` Last scan: ${new Date(st.at * 1000).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}.` : "";
+    $("scanNote").textContent = "Gap = highest ÷ lowest of the USGS, National Water Model and NWS flows for the same hour (last 48 hours). Click a row for its River check." + when;
+  }
+}
+$("scan").addEventListener("click", async () => {
+  $("scan").disabled = true;
+  let lids = [];
+  if (map) {  // the gauges nearest the map centre that report flow
+    const c = map.getCenter();
+    lids = [...gaugeIndex.values()].filter((g) => g.flow_cfs !== null)
+      .sort((a, b) => ((a.lat - c.lat) ** 2 + (a.lon - c.lng) ** 2) - ((b.lat - c.lat) ** 2 + (b.lon - c.lng) ** 2))
+      .slice(0, 8).map((g) => g.lid);
+  }
+  const r = await postJSON("/api/radar/scan", { lids });
+  if (!r.ok) { const d = await r.json(); $("scanNote").innerHTML = `<span class="error">${esc(d.error)}</span>`; $("scan").disabled = false; return; }
+  pollRadar();
+});
+$("lookup").addEventListener("click", () => {
+  const lid = $("lidIn").value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,6}$/.test(lid)) { $("mapNote").innerHTML = '<span class="error">Enter an NWS gauge code such as CKLA1 (4–6 letters and digits).</span>'; return; }
+  const g = gaugeIndex.get(lid);
+  if (g && map) map.setView([g.lat, g.lon], Math.max(map.getZoom(), 10));
+  pickGauge(g || { lid, name: lid });
+});
+$("lidIn").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("lookup").click(); } });
+
+// ---------- map + River check
+let map = null, layer = null, picked = null;
+const gaugeIndex = new Map();
+const FLOOD = { no_flooding: "#2C6E8F", action: "#C9A227", minor: "#D9822B", moderate: "#C0392B", major: "#7B2D8E" };
+const fmtCfs = (v) => v === null || v === undefined ? "–" : `${Math.round(v).toLocaleString()} cfs`;
+function initMap() {
+  if (!window.L) { $("map").innerHTML = '<p class="note" style="padding:12px">The map could not load (offline?). Type a gauge code above instead.</p>'; return; }
+  map = L.map("map", { zoomControl: true, preferCanvas: true }).setView([38.5, -96.5], window.innerWidth < 700 ? 3 : 4);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 16, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+  layer = L.layerGroup().addTo(map);
+  let t = null;
+  map.on("moveend", () => { if (allLoaded) return; clearTimeout(t); t = setTimeout(loadGauges, 450); });
+  map.on("zoomend", () => { if (allLoaded) drawAll(); });
+  loadAll();
+}
+let allLoaded = false, allRows = [];
+async function loadAll() {
+  let d;
+  try { d = await (await fetch("/api/gauges/all")).json(); } catch (e) { d = { status: "failed" }; }
+  if (d.gauges && d.gauges.length && (d.status === "ready" || d.status === "loading")) {
+    allRows = d.gauges.map(([lid, name, lat, lon, flood, stage_ft, flow_cfs]) => ({ lid, name, lat, lon, flood, stage_ft, flow_cfs }));
+    allLoaded = true;
+    for (const g of allRows) gaugeIndex.set(g.lid, g);
+    drawAll();
+    const n = (k) => allRows.filter((g) => g.flood === k).length;
+    const fl = ["action", "minor", "moderate", "major"].map((k) => [k, n(k)]).filter(([, v]) => v);
+    if (d.status === "loading") {
+      $("mapNote").textContent = `Loading US river gauges from NOAA into Zetaris, region ${d.done} of ${d.total}: ${allRows.length.toLocaleString()} so far…`;
+      setTimeout(loadAll, 4000);
+      return;
+    }
+    $("mapNote").textContent = `${allRows.length.toLocaleString()} NWS river gauges across the US, from NOAA's catalog in Zetaris` +
+      (d.at ? ` (updated ${new Date(d.at * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })})` : "") + ". " +
+      (fl.length ? "Above normal now: " + fl.map(([k, v]) => `${v} at ${k === "action" ? "action stage" : k + " flood"}`).join(", ") + ". " : "None in flood right now. ") +
+      "Zoom in and click a dot for a River check.";
+  } else if (d.status === "loading") {
+    $("mapNote").textContent = `Loading US river gauges from NOAA into Zetaris (first time only, a minute or two), region ${d.done || 0} of ${d.total || "…"}…`;
+    setTimeout(loadAll, 4000);
+  } else {
+    loadGauges();  // whole-US layer unavailable: load by area as you pan, and try the whole US again later
+    if (d.error) console.warn("whole-US gauge layer:", d.error);
+    setTimeout(loadAll, 60000);
+  }
+}
+function drawAll() {
+  layer.clearLayers();
+  const z = map.getZoom(), r = z <= 4 ? 2.5 : z <= 6 ? 3.5 : z <= 8 ? 5 : 6.5;
+  // flooding gauges drawn last so they sit on top
+  const order = { major: 5, moderate: 4, minor: 3, action: 2, no_flooding: 1 };
+  const rows = [...allRows].sort((a, b) => (order[a.flood] || 0) - (order[b.flood] || 0));
+  for (const g of rows) {
+    const sel = picked && picked.lid === g.lid;
+    const flooding = (order[g.flood] || 0) >= 2;
+    const m = L.circleMarker([g.lat, g.lon], { radius: sel ? r + 4 : flooding ? r + 1.5 : r, weight: sel ? 3 : z <= 5 ? 0 : 1,
+      color: "#fff", fillColor: FLOOD[g.flood] || "#9AA7AD", fillOpacity: 0.9 }).addTo(layer);
+    m.bindTooltip(esc(g.name), { direction: "top" });
+    m.lid = g.lid;
+    m.on("click", () => { pickGauge(g); if (map.getZoom() < 9) map.setView([g.lat, g.lon], 10); });
+  }
+}
+async function loadGauges() {
+  if (allLoaded) return;
+  const b = map.getBounds();
+  const q = `xmin=${b.getWest().toFixed(3)}&ymin=${b.getSouth().toFixed(3)}&xmax=${b.getEast().toFixed(3)}&ymax=${b.getNorth().toFixed(3)}`;
+  $("mapNote").textContent = "Finding gauges in this area with SQL in Zetaris…";
+  let d;
+  try { d = await (await fetch("/api/gauges?" + q)).json(); } catch (e) { d = { error: String(e) }; }
+  if (allLoaded) return;  // the whole-US layer arrived meanwhile
+  if (d.error) { $("mapNote").textContent = "Could not load gauges: " + d.error; return; }
+  if (d.zoom_in) { layer.clearLayers(); $("mapNote").textContent = "Zoom in to a region (a few hundred miles across) to see its river gauges."; return; }
+  layer.clearLayers();
+  for (const g of d.gauges) {
+    gaugeIndex.set(g.lid, g);
+    const sel = picked && picked.lid === g.lid;
+    const m = L.circleMarker([g.lat, g.lon], { radius: sel ? 9 : 6, weight: sel ? 3 : 1, color: "#fff",
+      fillColor: FLOOD[g.flood] || "#9AA7AD", fillOpacity: 0.95 }).addTo(layer);
+    m.bindTooltip(`${esc(g.name)}`, { direction: "top" });
+    m.on("click", () => pickGauge(g));
+  }
+  $("mapNote").textContent = `${d.gauges.length} NWS river gauges in view (from NOAA's catalog, queried in Zetaris). Click one for a River check. ${d.note || ""}`;
+}
+function pickGauge(g) {
+  picked = g;
+  $("cName").textContent = g.name || g.lid;
+  $("cNow").textContent = g.flow_cfs !== undefined
+    ? `NWS reading now: ${g.stage_ft !== null ? g.stage_ft + " ft" : "–"}, ${fmtCfs(g.flow_cfs)}. ${g.flood && FLOOD[g.flood] ? "Flood status: " + g.flood.replace("_", " ") + "." : ""}`
+    : "Gauge " + g.lid;
+  $("cGo").disabled = false;
+  $("cOut").innerHTML = "";
+  if (map) { if (allLoaded) drawAll(); else loadGauges(); }
+}
+$("locate").addEventListener("click", () => {
+  if (!navigator.geolocation || !map) { $("mapNote").textContent = "Location is not available in this browser; pan the map instead."; return; }
+  $("mapNote").textContent = "Finding your location…";
+  navigator.geolocation.getCurrentPosition(
+    (p) => map.setView([p.coords.latitude, p.coords.longitude], 10),
+    () => { $("mapNote").textContent = "Location was not shared; pan the map to your area instead."; },
+    { timeout: 10000 });
+});
+$("cGo").addEventListener("click", async () => {
+  if (!picked) return;
+  $("cGo").disabled = true;
+  $("cOut").innerHTML = '<p class="note">Reading this gauge\'s USGS, NWS, National Water Model and rain data in Zetaris… (the first check of a gauge registers its sources and can take a minute)</p>';
+  let d;
+  try {
+    const r = await postJSON("/api/check", { site: picked.lid, when: $("cWhen").value, activity: $("cAct").value, flood: picked.flood || "" });
+    d = await r.json();
+  } catch (e) { d = { error: String(e) }; }
+  $("cGo").disabled = false;
+  if (d.error) { $("cOut").innerHTML = `<p class="error">${esc(d.error)}</p>`; return; }
+  renderCheck(d);
+});
+function renderCheck(d) {
+  lastCheck = d;
+  if (d.site) selectSite(d.site.lid);  // every gauge gets the same page: details, chart and investigation
+  const c = d.card || {}, f = d.facts || {}, p = f.pattern;
+  const seen = p && p.other_sources ? `<ul class="seen">${p.other_sources.map((o) => `<li><b>${esc(o.source)}</b>: ${esc(o.summary)}</li>`).join("")}</ul>` : "";
+  const learned = d.learned && d.learned.investigation
+    ? `<div class="learned"><b>From an earlier in-depth investigation</b> (${esc(d.learned.investigation.at.replace("T", " "))} UTC): ${esc(d.learned.investigation.answer || "")}</div>` : "";
+  const links = (d.links || []).map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(" · ");
+  $("cOut").innerHTML = `
+    ${d.flood_alert ? `<div class="alert">${esc(d.flood_alert)}</div>` : ""}
+    <p class="headline">${esc(c.headline || "")}</p>
+    ${f.ok === false ? "" : `<dl>
+      <div><dt>${f.mode === "stage" ? "What this gauge measures" : "Which number to trust here"}</dt><dd>${esc(c.trust || "")}</dd></div>
+      <div><dt>What the river has been doing</dt><dd>${esc(c.pattern || "")}${p ? `<div class="note" style="margin-top:4px">Would the other sources have shown it?</div>${seen}` : ""}</dd></div>
+      <div><dt>Right now</dt><dd>${esc(c.now || "")}</dd></div>
+      <div><dt>For your plans</dt><dd>${esc(c.plan || "")}</dd></div>
+    </dl>`}
+    ${d.caution ? `<div class="caution">${esc(d.caution)}</div>` : ""}
+    ${learned}
+    <div class="row"><button type="button" class="btn-quiet" id="cDeep">Investigate in depth (about 2 min)</button></div>
+    <div class="foot">Numbers computed in code from Zetaris (USGS, NWS, National Water Model, Open-Meteo). Words: ${esc(d.written_by || "")}${d.written_by && d.written_by.includes("/") ? " via Meterless Nightshift" : ""}. ${links ? "Official pages: " + links : ""}</div>`;
+  if ($("cDeep")) $("cDeep").addEventListener("click", async () => {
+    await selectSite(d.site.lid);
+    $("ask").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  if (map && d.site && d.site.lat && !gaugeIndex.has(d.site.lid)) map.setView([d.site.lat, d.site.lon], 10);
+}
+
+// ---------- live investigation
+const checks = {};
+function resetRun() {
+  $("timeline").innerHTML = ""; $("hyps").innerHTML = '<span class="empty">The planner is forming explanations.</span>';
+  $("receipts").innerHTML = ""; $("report").className = "report empty"; $("report").textContent = "Investigating…";
+  reportMd = ""; $("dlReport").disabled = true;
+  for (const k in checks) delete checks[k];
+}
+function addStep(cls, html) {
+  const li = document.createElement("li"); li.className = cls; li.innerHTML = html; $("timeline").appendChild(li); return li;
+}
+function renderHyps(list, trail) {
+  $("hyps").innerHTML = list.map((h) => `
+    <div class="hyp"><span class="stance ${esc(h.status)}">${esc(h.status || "open")}</span><b>${esc(h.id)}</b>
+      <p class="claim">${esc(h.claim)}</p>
+      ${h.history ? `<div class="trail">${h.history.map((x) => { const [who, v] = x.split(":"); return `<span><b>${esc(who)}</b> ${esc(v)}</span>`; }).join("<span>→</span>")}</div>` : ""}
+    </div>`).join("");
+}
+let currentCheck = null;
+function onEvent(e) {
+  switch (e.kind) {
+    case "step":
+      if (e.agent === "planner") {
+        addStep("done", `<span class="who">Planner</span> proposed ${e.hypotheses.length} explanations and ${e.checks.length} checks.`);
+        renderHyps(e.hypotheses);
+      } else if (e.agent === "investigator") {
+        if (!checks[e.check]) {
+          const li = addStep("", `<span class="who">Investigator</span> <div class="check"><div class="purpose" data-p></div><div data-f></div><details><summary>SQL sent to Zetaris</summary><pre class="sql" data-sql></pre></details></div>`);
+          checks[e.check] = li;
+          const p = window._pending && window._pending.id === e.check ? window._pending : null;
+          if (p) li.querySelector("[data-p]").textContent = `${p.id} tests ${p.h}: ${p.purpose}`;
+        }
+        checks[e.check].querySelector("[data-sql]").textContent = e.sql + (e.attempt > 1 ? `\n-- attempt ${e.attempt}, after the previous query failed` : "");
+        currentCheck = e.check;
+      } else if (e.agent === "critic") {
+        const issues = (e.issues || []).map((i) => `<li>${esc(i)}</li>`).join("");
+        const more = e.new_checks && e.new_checks.length && e.verdict === "revise" ? `<div class="note">Sent back ${e.new_checks.length} new checks.</div>` : "";
+        addStep("critic", `<span class="who">Critic, round ${e.round}:</span> ${e.verdict === "approve" ? "approved the evidence." : "asked for more work."}<ul class="issues">${issues}</ul>${more}`);
+      }
+      break;
+    case "say": {
+      const m = /^ > (C\d+) \[(H\d+)\] (.*)$/.exec(e.text);
+      if (m) { checks[m[1]] = checks[m[1]] || null; window._pending = { id: m[1], h: m[2], purpose: m[3] }; }
+      $("status").textContent = e.text.trim().slice(0, 160);
+      break;
+    }
+    case "sql":
+      if (currentCheck && checks[currentCheck]) {
+        const p = window._pending && window._pending.id === currentCheck ? window._pending : null;
+        if (p) checks[currentCheck].querySelector("[data-p]").textContent = `${p.id} tests ${p.h}: ${p.purpose}`;
+        if (e.error) checks[currentCheck].querySelector("[data-f]").innerHTML = `<div class="finding error">Query failed, retrying with the error: ${esc(e.error.slice(0, 140))}</div>`;
+      }
+      break;
+    case "finding": {
+      const li = checks[e.check_id];
+      if (li) { li.classList.add("done"); li.querySelector("[data-f]").innerHTML = `<div class="finding"><span class="stance ${esc(e.stance)}">${esc(e.stance)} ${esc(e.hypothesis)}</span>${esc(e.finding)} <span class="note">[${esc(e.evidence_id)}]</span></div>`; }
+      break;
+    }
+    case "llm": {
+      if (!$("receipts").children.length || $("receipts").querySelector(".empty")) $("receipts").innerHTML = "";
+      const rc = e.receipt || {};
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${esc(e.role)}</td><td class="model">${esc((rc.routed_model || e.served_by || "").replace("nvidia/", ""))}${rc.decision_id ? `<div class="note">${esc(rc.decision_id)}</div>` : ""}</td><td>${e.seconds ?? "–"}s</td>`;
+      $("receipts").appendChild(tr);
+      break;
+    }
+    case "hypothesis_status":
+      renderHyps(e.statuses);
+      addStep("done", `<span class="who">World Model</span> settled each explanation: the latest agent's verdict wins and the full history is kept.`);
+      break;
+    case "report":
+      reportMd = e.text || "";
+      $("report").className = "report"; $("report").innerHTML = md(reportMd); glossify($("report"));
+      $("dlReport").disabled = !reportMd;
+      break;
+    case "run_complete":
+      $("status").textContent = "Investigation complete. The answer is below, and the World Model has remembered it for next time.";
+      $("go").disabled = false; loadMemory();
+      break;
+    case "run_error":
+      $("status").innerHTML = `<span class="error">The investigation stopped: ${esc(e.error)}</span>`;
+      $("go").disabled = false;
+      break;
+  }
+}
+function listen() {
+  if (source) source.close();
+  source = new EventSource("/api/events?since=0");
+  source.onmessage = (m) => onEvent(JSON.parse(m.data));
+  source.addEventListener("idle", () => { source.close(); $("go").disabled = false; showCancel(false); });
+}
+
+function showCancel(on) { $("cancelRun").hidden = !on; $("cancelRun").disabled = false; }
+$("cancelRun").addEventListener("click", async () => {
+  $("cancelRun").disabled = true;
+  await postJSON("/api/cancel", {});
+});
+$("dlReport").addEventListener("click", () => {
+  if (!reportMd) return;
+  const a = document.createElement("a");
+  const now = new Date();
+  const day = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });  // e.g. Oct 23, 2026
+  const short = now.toLocaleDateString("en-US", { month: "short", day: "2-digit" }).replace(" ", "");  // e.g. Oct23
+  const slug = riverName.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const body = `# RiverTruth report: ${riverName}\n\n_${day}. Question: ${$("q").value.trim()}_\n\n${reportMd}`;
+  a.href = URL.createObjectURL(new Blob([body], { type: "text/markdown;charset=utf-8" }));
+  a.download = `${slug}_${short}.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$("ask").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const q = $("q").value.trim();
+  if (!q) { $("status").innerHTML = '<span class="error">Type a question or pick a case first.</span>'; return; }
+  $("go").disabled = true; showCancel(true); resetRun();
+  const r = await postJSON("/api/run", { question: q, site });
+  const d = await r.json();
+  if (!r.ok) { $("status").innerHTML = `<span class="error">${esc(d.error)}</span>`; $("go").disabled = false; showCancel(false); return; }
+  $("status").textContent = "Reading the latest data from all sources…";
+  listen();
+});
+
+(async () => {
+  initMap();
+  await Promise.all([loadCases(), loadStatus()]);  // nothing is selected until the person picks a gauge
+  pollRadar();
+  const s = await (await fetch("/api/status")).json();
+  if (s.running) { $("go").disabled = true; showCancel(true); resetRun(); listen(); }
+})();
+</script>
+</body>
+</html>
