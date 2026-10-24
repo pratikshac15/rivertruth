@@ -13,6 +13,13 @@ CASES = {
           "accurately compared with the USGS measurements, and why?"),
 }
 
+# What the example buttons say on the page: plain questions, not internal names.
+LABELS = {
+    "1": "Why does the river jump at 9 PM?",
+    "2": "Why does the NWS gauge read higher?",
+    "3": "Is the computer model late?",
+}
+
 
 def site_question(name):
     """The default question for any gauge the Scout registers."""

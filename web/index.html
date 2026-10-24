@@ -310,7 +310,7 @@ footer { color: var(--ink-3); font-size: 13px; padding: 26px 0 36px; }
       <ol class="steps" aria-label="The agents"><li>Planner</li><li>Investigator</li><li>Critic</li><li>Reporter</li><li>Fact-checker</li></ol>
       <form class="ask" id="ask">
         <label for="q" class="sr-only">Your question about this river</label>
-        <textarea id="q" placeholder="For example: why did the USGS gauge jump to 5,000 cfs last night while the model stayed low?"></textarea>
+        <textarea id="q" placeholder="Type your own question about this river, or pick an example below."></textarea>
         <div class="ask-row" id="cases"></div>
         <div class="ask-row">
           <span class="note" id="modeNote"></span>
@@ -589,7 +589,7 @@ async function loadMemory() {
 // ---------- cases
 async function loadCases() {
   cases = await (await fetch("/api/cases")).json();
-  $("cases").innerHTML = cases.map((c) => `<button type="button" class="case" data-k="${c.key}">${esc(c.name.replace(/-/g, " "))}</button>`).join("");
+  $("cases").innerHTML = cases.map((c) => `<button type="button" class="case" data-k="${c.key}">${esc(c.label || c.name.replace(/-/g, " "))}</button>`).join("");
   $("cases").querySelectorAll(".case").forEach((b) => b.addEventListener("click", () => {
     $("q").value = cases.find((c) => c.key === b.dataset.k).question; $("q").focus();
   }));

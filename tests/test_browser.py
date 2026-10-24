@@ -123,6 +123,19 @@ class Design(unittest.TestCase):
             self.assertEqual(errors, [])
             b.close()
 
+    def test_the_question_box_explains_itself_and_examples_are_plain_questions(self):
+        from agent.cases import LABELS
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b, page, errors = self._page(p, s.url)
+            self._check(page, "TODA1")
+            page.click("#cDeep")
+            page.wait_for_selector("#deep", state="visible", timeout=5000)
+            self.assertIn("pick an example below", page.get_attribute("#q", "placeholder"))
+            self.assertEqual(page.eval_on_selector_all("#cases .case", "bs => bs.map(b => b.textContent)"), list(LABELS.values()))
+            page.click("#cases .case >> nth=0")
+            self.assertIn("Oct 22", page.input_value("#q"))
+            b.close()
+
     def test_one_typeface_for_the_answer(self):
         with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
             b, page, errors = self._page(p, s.url)

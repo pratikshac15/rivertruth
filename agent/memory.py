@@ -201,7 +201,8 @@ def finish_run(run_id, run_ctx, report, statuses):
 
 def _first_sentences(report, n=2):
     text = report.split("##", 2)[1] if report.count("##") >= 1 else report
-    text = re.sub(r"^[^\n]*\n", "", text.strip(), count=1) if text.strip().lower().startswith("answer") else text
+    if report.count("##") >= 1:  # the section's first line is its heading ("For the public", "Answer"): not part of it
+        text = re.sub(r"^[^\n]*\n", "", text.strip(), count=1)
     text = re.sub(r"[*_`#>|]", "", text).strip()
     parts = re.split(r"(?<=[.!?])\s+", text)
     return " ".join(parts[:n])[:500]
@@ -214,8 +215,9 @@ def prior_knowledge(current_run_id=None, max_runs=3):
     w = world()
     lines = []
     for pred in ("latest_explanation", "supported_explanations", "ruled_out_explanations"):
+        gone = _retracted(_site_entity)
         facts = [f for f in w.facts_about(_site_entity, pred, include_superseded=True)
-                 if (f["value"] or {}).get("run") != current_run_id][-max_runs:]
+                 if (f["value"] or {}).get("run") not in gone | {current_run_id}][-max_runs:]
         for f in facts:
             v = f["value"]
             body = v.get("answer") or "; ".join(c[:200] for c in v.get("claims", []))
@@ -238,15 +240,53 @@ def prior_knowledge(current_run_id=None, max_runs=3):
 
 # ------------------------------------------------------------------ River check (quick answers reuse what was learned)
 
+_HEADING = re.compile(r"^\s*(for the public|answer)\s*[:\-]?\s*", re.I)
+
+
+def _retracted(ent):
+    """Runs whose stored conclusions were retracted for this gauge (they stay in the history)."""
+    out = set()
+    for f in world().facts_about(ent, "retracted_runs", include_superseded=True):
+        out |= set((f["value"] or {}).get("runs") or [])
+    return out
+
+
+def retract_runs(site, runs, reason):
+    """Retract earlier runs' conclusions for this gauge: the River check and the agents stop using them, and the
+    World Model keeps both the conclusions and this retraction (with its reason) in its history."""
+    w = world()
+    ent = site.entity or NORTHPORT
+    w.assert_fact(ent, "retracted_runs", {"runs": sorted(set(runs) | _retracted(ent)), "reason": reason}, confidence=1.0,
+                  source={"kind": "human", "by": "maintainer", "at": _now(), "url": "rivertruth://maintenance"})
+
+
+def retract_before(cutoff, reason):
+    """Retract every stored conclusion asserted before `cutoff` (ISO time, UTC), on every gauge. Returns how many."""
+    w = world()
+    by_ent = {}
+    for e in w.entities():
+        for f in w.facts_about(e["id"], "latest_explanation", include_superseded=True):
+            run = (f["value"] or {}).get("run")
+            if run and f["assertedAt"][:16] < cutoff[:16] and run not in _retracted(e["id"]):
+                by_ent.setdefault(e["id"], set()).add(run)
+    for ent, runs in by_ent.items():
+        w.assert_fact(ent, "retracted_runs", {"runs": sorted(runs | _retracted(ent)), "reason": reason}, confidence=1.0,
+                      source={"kind": "human", "by": "maintainer", "at": _now(), "url": "rivertruth://maintenance"})
+    return sum(len(r) for r in by_ent.values())
+
+
 def learned(site):
     """The latest investigation's conclusion and the latest observed pattern for this gauge, if any."""
     w = world()
     ent = site.entity or NORTHPORT
     out = {}
-    exp = w.facts_about(ent, "latest_explanation")
+    gone = _retracted(ent)
+    exp = [f for f in w.facts_about(ent, "latest_explanation", include_superseded=True)
+           if (f["value"] or {}).get("run") not in gone]
     if exp:
         v = exp[-1]["value"] or {}
-        out["investigation"] = {"run": v.get("run"), "at": exp[-1]["assertedAt"][:16], "answer": v.get("answer")}
+        out["investigation"] = {"run": v.get("run"), "at": exp[-1]["assertedAt"][:16],
+                                "answer": _HEADING.sub("", v.get("answer") or "")}
     pat = w.facts_about(ent, "observed_pattern")
     if pat:
         out["pattern"] = {**(pat[-1]["value"] or {}), "at": pat[-1]["assertedAt"][:16]}

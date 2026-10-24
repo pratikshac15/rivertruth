@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agent import config, gauges, log, memory, radar, rivercheck, runctl, scout, sites, snapshot, zetaris  # noqa: E402
-from agent.cases import CASES, site_question  # noqa: E402
+from agent.cases import CASES, LABELS, site_question  # noqa: E402
 from agent.orchestrator import run  # noqa: E402
 from agent.sites import FLAGSHIP, WATCHLIST  # noqa: E402
 
@@ -148,7 +148,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
         elif u.path == "/api/cases":
-            self._json([{"key": k, "name": n, "question": q} for k, (n, q) in CASES.items()])
+            self._json([{"key": k, "name": n, "label": LABELS.get(k, n), "question": q} for k, (n, q) in CASES.items()])
         elif u.path == "/api/sites":
             known = {g["lid"]: g for g in memory.known_sites()}
             out = [{"lid": FLAGSHIP.lid, "name": FLAGSHIP.name, "registered": True, "flagship": True}]
