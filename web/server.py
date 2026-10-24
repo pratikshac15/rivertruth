@@ -38,6 +38,27 @@ def _capture(rec):
 log.subscribe(_capture)
 
 
+def plain_error(e):
+    """One plain sentence for the page; the full technical error goes to the log (see the callers)."""
+    raw = str(e)
+    low = raw.lower()
+    if "429" in raw or "too many requests" in low:
+        return ("NOAA is getting too many requests right now. Please try again in a few minutes; "
+                "gauges you have already opened keep working.")
+    if ("rest api call failed" in low or "timed out" in low or "timeout" in low or "connection" in low
+            or "max retries" in low):
+        return ("NOAA or USGS didn't answer for this gauge just now. Please try again in a minute; "
+                "if it keeps happening, this gauge may not have a detailed record at NOAA.")
+    if "exception" in low or "invalid_" in low or "error running query" in low or "traceback" in low:
+        return "We couldn't read this gauge's data right now. Please try another gauge, or try this one again later."
+    return raw[:300]
+
+
+def _fail(handler, e, code=503):
+    log.event("request_error", error=str(e)[:1000])
+    return handler._json({"error": plain_error(e)}, code)
+
+
 def _run_in_background(question, site):
     try:
         run(question, site)
@@ -151,7 +172,7 @@ class Handler(BaseHTTPRequestHandler):
             except (KeyError, ValueError):
                 self._json({"error": "xmin, ymin, xmax, ymax are required"}, 400)
             except Exception as e:  # noqa: BLE001
-                self._json({"error": str(e)[:300]}, 503)
+                _fail(self, e)
         elif u.path == "/api/radar":
             self._json(radar.STATE)
         elif u.path == "/api/status":
@@ -171,7 +192,7 @@ class Handler(BaseHTTPRequestHandler):
                             "site": {**site.to_dict(), "tz_label": site.tz_now()[0], "tz_offset": site.tz_now()[1]},
                             "question": None if site.flagship else site_question(site.name)})
             except Exception as e:  # noqa: BLE001
-                self._json({"error": str(e)[:300]}, 503)
+                _fail(self, e)
         elif u.path == "/api/memory":
             try:
                 lid = (parse_qs(u.query).get("site") or [FLAGSHIP.lid])[0]
@@ -179,7 +200,7 @@ class Handler(BaseHTTPRequestHandler):
                     memory.use_site(scout.ensure_site(lid))
                 self._json({"text": memory.prior_knowledge(), "stats": memory.world().stats()})
             except Exception as e:  # noqa: BLE001
-                self._json({"error": str(e)[:300]}, 503)
+                _fail(self, e)
         elif u.path == "/api/events":
             # Server-sent events: replay from ?since=N, then stream new events as they arrive.
             since = int((parse_qs(u.query).get("since") or ["0"])[0])
@@ -232,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(rivercheck.check(lid, (data.get("when") or "")[:80], (data.get("activity") or "")[:40],
                                                   (data.get("flood") or "")[:30]))
             except Exception as e:  # noqa: BLE001
-                return self._json({"error": str(e)[:300]}, 503)
+                return _fail(self, e)
         if path != "/api/run":
             return self._json({"error": "not found"}, 404)
         q = (data.get("question") or "").strip()

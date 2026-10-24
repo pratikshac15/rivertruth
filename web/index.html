@@ -43,7 +43,7 @@ body { font: 16px/1.55 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sa
 a { color: var(--water); }
 :focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+.wrap { max-width: 1480px; margin: 0 auto; padding: 0 24px; }
 @media (max-width: 600px) { .wrap { padding: 0 16px; } }
 .eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--water); margin: 0; }
 .note { font-size: 14px; color: var(--ink-2); }
@@ -450,7 +450,7 @@ let tzOff = -5, tzName = "Central", nwsName = "NWS Oliver", riverName = "Black W
 function cdt(h) { const t = new Date(h.replace(" ", "T") + ":00Z"); t.setUTCHours(t.getUTCHours() + tzOff); return t; }
 function cdtLabel(h) { const t = cdt(h); const hr = t.getUTCHours(); return `${t.getUTCMonth() + 1}/${t.getUTCDate()} ${hr % 12 || 12} ${hr < 12 ? "AM" : "PM"}`; }
 function drawChart(rows) {
-  const W = 1000, H = 320, L = 58, R = 46, T = 14, B = 34;
+  const W = 1000, H = 320, L = 72, R = 46, T = 14, B = 34;
   const withData = rows.filter((r) => (chartMode === "level" ? r.level !== null : [r.usgs, r.nwm, r.nws].some((v) => v !== null)));
   if (chartMode === "none" || !withData.length) {
     $("chart").innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="16" fill="${css("--ink-2")}">No data published for this gauge this week</text>`;

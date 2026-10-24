@@ -100,3 +100,47 @@ class Security(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlainErrorsForPeople(unittest.TestCase):
+    """Oct 24: a River check showed 'REST API call failed: api.water.noaa.gov URL: GET https://...' to the person.
+    Technical failures now reach the page as one plain sentence; the full error still goes to the log."""
+
+    LIVE = ("REST API call failed: api.water.noaa.gov URL: GET https://api.water.noaa.gov/nwps/v1/gauges/WDNC2 "
+            "Content-Type: application/x-www-form-urlencoded Headers: Map(User-Agent -> rivertruth-hackathon-demo)")
+
+    def test_messages(self):
+        from web import server
+        for raw, want in ((self.LIVE, "didn't answer"),
+                          ("REST API call failed: Server returned HTTP response code: 429 for URL", "too many requests"),
+                          ("org.apache.hive.service.cli.HiveSQLException: Error running query: [INVALID_EXTRACT_BASE_FIELD_TYPE]",
+                           "couldn't read"),
+                          ("HTTPConnectionPool(host='localhost', port=8888): Read timed out.", "didn't answer")):
+            with self.subTest(raw=raw[:40]):
+                msg = server.plain_error(Exception(raw))
+                self.assertIn(want, msg)
+                for tech in ("http", "Exception", "REST", "Map(", "INVALID_"):
+                    self.assertNotIn(tech, msg)
+        self.assertEqual(server.plain_error(Exception("'XX' does not look like an NWS gauge code (e.g. CKLA1).")),
+                         "'XX' does not look like an NWS gauge code (e.g. CKLA1).")  # already plain: kept
+
+    def test_a_failing_check_shows_the_plain_sentence_and_logs_the_full_error(self):
+        with Env() as env, Server(env) as s:
+            from agent import zetaris
+            real = env.zet.run_sql
+
+            def fail(sql, **k):
+                if "ckla1_gauge_raw" in sql:
+                    raise zetaris.SQLError(self.LIVE)
+                return real(sql, **k)
+            zetaris.run_sql = fail
+            from web import server
+            body = json.dumps({"site": "CKLA1", "when": "today", "activity": "fishing"}).encode()
+            port = s.httpd.server_address[1]
+            code, data = raw(s, "POST", "/api/check", body=body,
+                             headers={"Content-Type": "application/json", "Host": f"127.0.0.1:{port}",
+                                      "X-RiverTruth-Token": server.TOKEN})
+            self.assertEqual(code, 503)
+            err = json.loads(data)["error"]
+            self.assertIn("didn't answer", err)
+            self.assertNotIn("api.water.noaa.gov", err)

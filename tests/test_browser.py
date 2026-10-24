@@ -132,6 +132,20 @@ class Design(unittest.TestCase):
             self.assertEqual(head, body)
             b.close()
 
+    def test_wide_screens_use_the_width_but_paragraphs_stay_readable(self):
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b = p.chromium.launch()
+            page = b.new_page(viewport={"width": 1920, "height": 1080})
+            page.route("**/fonts.g*/**", lambda r: r.abort())
+            page.route("**/leaflet.min.css", lambda r: r.fulfill(body="", content_type="text/css"))
+            page.route("**/leaflet.min.js", lambda r: r.fulfill(path=os.path.join(HERE, "assets", "leaflet_mock.js"),
+                                                                content_type="application/javascript"))
+            page.goto(s.url)
+            page.wait_for_function("window.__markers && window.__markers.length >= 6", timeout=20000)
+            self.assertGreaterEqual(page.locator("#map").bounding_box()["width"], 1380)
+            self.assertLessEqual(page.locator(".hero p").bounding_box()["width"], 760)
+            b.close()
+
     def test_phone_width_has_no_sideways_scrolling(self):
         with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
             b = p.chromium.launch()
