@@ -49,7 +49,7 @@ def score(site):
     rows = [[r[0]] + [_f(x) for x in r[1:]] for r in sites.no_missing(res["rows"])]
     rows = rows[-48:]
     ratios = []
-    for hr, usgs, _peak, _stage, nwm, nws, _rain in rows:
+    for hr, usgs, _peak, _stage, nwm, nws in (r[:6] for r in rows):
         vals = [v for v in (usgs, nwm, nws) if v is not None and v >= 0]
         if len(vals) >= 2:
             ratios.append((max(vals) / max(min(vals), FLOOR_CFS), hr, usgs, nwm, nws))

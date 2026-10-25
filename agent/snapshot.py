@@ -12,7 +12,7 @@ from .sites import FLAGSHIP
 
 ROWS_SQL = """SELECT * FROM (SELECT hr_utc, usgs_northport_cfs, usgs_northport_peak_cfs, usgs_northport_stage_ft, nwm_cfs, nws_oliver_cfs, rain_mm
 FROM water.hourly_compare ORDER BY hr_utc DESC LIMIT 200) latest ORDER BY hr_utc"""   # the flagship site's newest rows
-COLS = ["hr_utc", "usgs", "usgs_peak", "pool_ft", "nwm", "nws", "rain"]
+COLS = ["hr_utc", "usgs", "usgs_peak", "pool_ft", "nwm", "nws", "rain", "nws_stage"]  # the flagship's rows stop at rain
 
 
 def rows_sql(site):
@@ -21,7 +21,7 @@ def rows_sql(site):
         return ROWS_SQL
     c = site.cols
     return (f"SELECT * FROM (SELECT {c['hr_utc']}, {c['usgs_cfs']}, {c['usgs_peak_cfs']}, {c['usgs_stage_ft']}, "
-            f"{c['nwm_cfs']}, {c['nws_cfs']}, {c['rain_mm']} FROM {site.view} ORDER BY hr_utc DESC LIMIT 200) latest "
+            f"{c['nwm_cfs']}, {c['nws_cfs']}, {c['rain_mm']}, {c['nws_stage_ft']} FROM {site.view} ORDER BY hr_utc DESC LIMIT 200) latest "
             f"ORDER BY hr_utc")
 CDT = timedelta(hours=-5)   # local offset of the site being analysed (set per site; flagship = Central)
 TZL = "CDT"
@@ -59,7 +59,7 @@ def analyse(rows, site=FLAGSHIP):
     for d in data:
         d["t"] = _t(d["hr_utc"])
         for k in COLS[1:]:
-            d[k] = _f(d[k])
+            d[k] = _f(d.get(k))  # the flagship's rows have no nws_stage column
     if not data:
         return f"No data in {site.view}."
     lines = []
@@ -141,15 +141,20 @@ def analyse(rows, site=FLAGSHIP):
                      f"published). It is not a flow source to compare: compare flow between the NWM and {N}, and use "
                      f"{U} for stage only. Never describe its flow as 0 cfs.")
     if not site.flagship:
-        st = [d["pool_ft"] for d in data if d["pool_ft"] is not None]
+        st = [d.get("nws_stage") for d in data if d.get("nws_stage") is not None]  # the NWS gauge's own level: same zero point as its flood levels
         action = (site.flood or {}).get("action")
         try:
             action = float(action) if action not in (None, "", -999) else None
         except (TypeError, ValueError):
             action = None
         if st and action and action > 0:
-            facts.append(f"Latest stage {st[-1]:.1f} ft is {action - st[-1]:.1f} ft below the NWS action stage ({action:g} ft): "
-                         "the river is below flood level, which is normal and is NOT evidence of a datum difference.")
+            gap = st[-1] - action
+            facts.append(f"Latest NWS stage {st[-1]:.1f} ft is {abs(gap):.1f} ft {'above' if gap >= 0 else 'below'} the NWS "
+                         f"action stage ({action:g} ft): " +
+                         ("the river is at or above the level where the NWS starts watching for flooding." if gap >= 0 else
+                          "the river is below flood level, which is normal and is NOT evidence of a datum difference.") +
+                         " (USGS and NWS stages are measured from different zero points: never compare a USGS stage with "
+                         "an NWS flood level.)")
         both = [(d["nws"] / max(d["nwm"], 1.0), d) for d in data if d["nws"] is not None and d["nwm"] is not None and d["nws"] > 0]
         if both:
             rs = sorted(r for r, _ in both)

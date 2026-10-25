@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You are part of RiverTruth, a team of agents that explains WHY river data sources disagree, for flood forecasters and emergency managers. Be precise, quantitative and honest about uncertainty. Never invent numbers: every claim must come from query results. Answer directly and concisely; do not deliberate at length.\", \"role\": \"system\"}, {\"content\": \"QUESTION: On the evening of Oct 22, 2026 (Central time), USGS, the National Water Model and the NWS gauge at Oliver Lock a",
+ "value": {
+  "text": "{\"finding\": \"USGS and NWS Oliver tailwater stage values are identical hour-by-hour (stage_diff_ft \u2264 0.04 ft), confirming they share the same sensor. However, derived flows differ substantially: on Oct 18, NWS Oliver cfs ranged 1202.5\u20131055.0 while USGS Northport cfs ranged 676.0\u2013111.3, a systematic ~300\u2013400 cfs higher NWS flow for the same stage. On Oct 19 02:00 UTC, NWS Oliver cfs = 1497.5 while USGS Northport cfs = 5870.0, showing the opposite direction of discrepancy. The stage-to-flow conversion differs between the two agencies, validating H2.\", \"stance\": \"supports\"}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_4gtnsdgt",
+   "from_cache": false
+  }
+ }
+}

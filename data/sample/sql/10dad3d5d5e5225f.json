@@ -1,0 +1,9 @@
+{
+ "key": "UNCACHE TABLE IF EXISTS open_meteo.rain_avla1_raw_b",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

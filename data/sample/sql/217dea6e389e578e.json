@@ -1,0 +1,91 @@
+{
+ "key": "SELECT g.lid, g.name, g.latitude, g.longitude, g.status.observed.`primary`, g.status.observed.`primaryUnit`, g.status.observed.`secondary`, g.status.observed.`secondaryUnit`, g.status.observed.`floodCategory`, g.status.observed.`validTime` FROM noaa_nwps.gauges_r_m125_p24_m115_p33 LATERAL VIEW explode(gauges) AS g LIMIT 5000",
+ "value": {
+  "columns": [
+   "lid",
+   "name",
+   "latitude",
+   "longitude",
+   "primary",
+   "primaryUnit",
+   "secondary",
+   "secondaryUnit",
+   "floodCategory",
+   "validTime"
+  ],
+  "rows": [
+   [
+    "FSNC1",
+    "San Diego River at Fashion Valley",
+    "32.765",
+    "-117.16777777778",
+    "2.96",
+    "ft",
+    "0.027",
+    "kcfs",
+    "no_flooding",
+    "2026-10-25T06:15:00Z"
+   ],
+   [
+    "GOCC1",
+    "Goat Canyon at International Border",
+    "32.536666666667",
+    "-117.09944444444",
+    "-999.0",
+    "",
+    "-999.0",
+    "",
+    "obs_not_current",
+    "0001-01-01T00:00:00Z"
+   ],
+   [
+    "SDGC1",
+    "San Diego River at Mast Nr Santee",
+    "32.84027777777778",
+    "-117.025",
+    "2.03",
+    "ft",
+    "0.009",
+    "kcfs",
+    "not_defined",
+    "2026-10-25T06:15:00Z"
+   ],
+   [
+    "TIJC1",
+    "Tijuana River at International Border",
+    "32.54167",
+    "-117.0375",
+    "39.81",
+    "ft",
+    "0.0749",
+    "kcfs",
+    "not_defined",
+    "2026-10-25T06:00:00Z"
+   ],
+   [
+    "TJAC1",
+    "Tijuana River near San Ysidro",
+    "32.54222222222222",
+    "-117.0388888888889",
+    "41.05",
+    "ft",
+    "-999.0",
+    "kcfs",
+    "not_defined",
+    "2026-10-25T05:43:00Z"
+   ],
+   [
+    "UGGC1",
+    "Smugglers Gulch at International Border",
+    "32.536666666667",
+    "-117.08694444444",
+    "-999.0",
+    "",
+    "-999.0",
+    "",
+    "obs_not_current",
+    "0001-01-01T00:00:00Z"
+   ]
+  ]
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "key": "SELECT * FROM water.hc_gwsc2 LIMIT 1",
+ "value": {
+  "columns": [
+   "hr_utc",
+   "usgs_cfs",
+   "usgs_peak_cfs",
+   "usgs_stage_ft",
+   "nwm_cfs",
+   "nws_cfs",
+   "nws_stage_ft",
+   "rain_mm"
+  ],
+  "rows": [
+   [
+    "2026-10-22 11:00",
+    "488.8",
+    "490.0",
+    "1.75",
+    null,
+    "488.8",
+    "1.75",
+    "0.0"
+   ]
+  ]
+ }
+}

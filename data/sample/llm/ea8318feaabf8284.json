@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You write short, accurate, plain-language river updates.\", \"role\": \"system\"}, {\"content\": \"FACTS about a river gauge (computed in code from USGS, NWS, the National Water Model and rainfall; always correct):\\n{\\n \\\"ok\\\": true,\\n \\\"site\\\": \\\"GWSC2\\\",\\n \\\"name\\\": \\\"Roaring Fork River at Glenwood Springs\\\",\\n \\\"tz\\\": \\\"MDT\\\",\\n \\\"trusted\\\": \\\"USGS measured flow (USGS 09085000)\\\",\\n \\\"why_trusted\\\": \\\"it is a measured flow at a USGS gauge, updated every 15 minutes\\\",\\n \\\"ot",
+ "value": {
+  "text": "{\n  \"headline\": \"The Roaring Fork at Glenwood Springs is running at 733 cfs, which is a bit higher than typical for this week.\",\n  \"trust\": \"The USGS measured flow is the most reliable source here. The NWS and National Water Model gauges both agree within 20%, showing consistent readings.\",\n  \"pattern\": \"Flow has been steady over the last 3 hours after rising from 485 cfs earlier this week. The week's typical flow is 505 cfs, with a range of 465 to 974 cfs.\",\n  \"plan\": \"At 733 cfs the river is running above its weekly median, which may make for lively paddling this evening. Check the local forecast for any expected changes before heading out.\"\n}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_ghlynte9",
+   "from_cache": false
+  }
+ }
+}

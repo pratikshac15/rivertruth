@@ -1,0 +1,37 @@
+{
+ "key": "SELECT lid, name, `usgsId`, `reachId`, latitude, longitude, flood.categories.action.stage, flood.categories.minor.stage, flood.categories.moderate.stage, flood.categories.major.stage, `upstreamLid`, `downstreamLid`, `timeZone` FROM noaa_nwps.avla1_gauge_raw LIMIT 1",
+ "value": {
+  "columns": [
+   "lid",
+   "name",
+   "usgsId",
+   "reachId",
+   "latitude",
+   "longitude",
+   "stage",
+   "stage",
+   "stage",
+   "stage",
+   "upstreamLid",
+   "downstreamLid",
+   "timeZone"
+  ],
+  "rows": [
+   [
+    "AVLA1",
+    "Tombigbee River at Bevill Lock and Dam",
+    "02444161",
+    "18631042",
+    "33.210277777778",
+    "-88.288611111111",
+    "122",
+    "122",
+    "133",
+    "135",
+    "CBUM6",
+    "GNSA1",
+    "CST6CDT"
+   ]
+  ]
+ }
+}

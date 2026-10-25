@@ -202,7 +202,7 @@ class FakeZetaris:
             f = g.flood
             return {"columns": [], "rows": [[g.lid, g.name, g.usgs_id or None, g.reach_id or None, g.lat, g.lon,
                                              f["action"], f["minor"], f["moderate"], f["major"], "", "", g.tz]]}
-        m = re.search(r"FROM (usgs_nwis\.iv_|noaa_nwps\.|noaa_nwm\.reach_|open_meteo\.rain_)(\w+?)_(raw|observed_raw|analysis_raw)\b", sql)
+        m = re.search(r"FROM (usgs_nwis\.iv_|noaa_nwps\.|noaa_nwm\.reach_|open_meteo\.rain_)(\w+?)_(raw|observed_raw|analysis_raw)(?:_b)?\b", sql)
         if m and "water." not in sql:  # a probe of one agency's raw table (the Source Scout testing a source)
             g = self._gauge_for_table(m.group(0))
             if g is not None:
@@ -311,6 +311,8 @@ class Env:
         gauges.BACKOFF = 0
         gauges.COOLDOWN = 0
         gauges._loaded_here = False
+        from agent import scout as _scout
+        _scout._REFRESHED.clear()
         from agent import log
         log._path = None
         radar.STATE.update(status="idle", rows=[], done=0, total=0, error=None, at=None)

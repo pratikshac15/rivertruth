@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE noaa_nwps.avla1_gauge_raw",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

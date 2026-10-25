@@ -1,0 +1,49 @@
+{
+ "key": "SELECT hr_utc, usgs_northport_cfs, usgs_northport_peak_cfs, nwm_cfs, nws_oliver_cfs FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-23 02:00' AND '2026-10-23 06:00' ORDER BY hr_utc LIMIT 200",
+ "value": {
+  "columns": [
+   "hr_utc",
+   "usgs_northport_cfs",
+   "usgs_northport_peak_cfs",
+   "nwm_cfs",
+   "nws_oliver_cfs"
+  ],
+  "rows": [
+   [
+    "2026-10-23 02:00",
+    "4377.5",
+    "5640.0",
+    null,
+    "1232.5"
+   ],
+   [
+    "2026-10-23 03:00",
+    "2715.0",
+    "3160.0",
+    null,
+    "1150.0"
+   ],
+   [
+    "2026-10-23 04:00",
+    "1662.5",
+    "1880.0",
+    null,
+    "1107.5"
+   ],
+   [
+    "2026-10-23 05:00",
+    "1267.5",
+    "1390.0",
+    null,
+    "1072.5"
+   ],
+   [
+    "2026-10-23 06:00",
+    "877.5",
+    "1020.0",
+    null,
+    "1040.0"
+   ]
+  ]
+ }
+}

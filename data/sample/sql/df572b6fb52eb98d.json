@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE noaa_nwps.gauges_r_m95_p42_m85_p50",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

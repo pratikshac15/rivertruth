@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You write short, accurate, plain-language river updates.\", \"role\": \"system\"}, {\"content\": \"FACTS about a river gauge (computed in code from USGS, NWS, the National Water Model and rainfall; always correct):\\n{\\n \\\"ok\\\": true,\\n \\\"site\\\": \\\"TODA1\\\",\\n \\\"name\\\": \\\"Black Warrior River at Tuscaloosa and Northport, Alabama\\\",\\n \\\"tz\\\": \\\"CDT\\\",\\n \\\"trusted\\\": \\\"USGS measured flow (USGS Northport)\\\",\\n \\\"why_trusted\\\": \\\"it is a measured flow at a USGS gauge, updated every 1",
+ "value": {
+  "text": "{\"headline\": \"The river is near its typical evening peak and falling now.\", \"trust\": \"The USGS Northport gauge gives the most reliable measured flow; the NWS Oliver gauge typically reads about 3 times higher, and the National Water Model agrees within 20%.\", \"pattern\": \"This week the river follows a daily surge pattern, typically peaking around 8 PM CDT and then falling, with flows ranging from 15 to 5,888 cfs.\", \"plan\": \"Since the flow is falling this evening, conditions may be calmer, but the river is still well above its weekly median; wait for the flow to drop further before launching.\"}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_ww3p73kn",
+   "from_cache": false
+  }
+ }
+}

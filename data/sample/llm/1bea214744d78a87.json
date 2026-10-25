@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You are part of RiverTruth, a team of agents that explains WHY river data sources disagree, for flood forecasters and emergency managers. Be precise, quantitative and honest about uncertainty. Never invent numbers: every claim must come from query results. Answer directly and concisely; do not deliberate at length.\", \"role\": \"system\"}, {\"content\": \"\\nDATA IN ZETARIS (Lightning SQL = Spark SQL dialect). Region: Black Warrior River at Tuscaloosa/Northport, Alabama.\\nFour",
+ "value": {
+  "text": "{\"sql\": \"SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, hour(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS peak_hour_cdt, MAX(usgs_northport_peak_cfs) AS max_peak_cfs FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-18 06:00' AND '2026-10-25 06:00' AND usgs_northport_peak_cfs IS NOT NULL GROUP BY local_day, peak_hour_cdt ORDER BY local_day, max_peak_cfs DESC\", \"purpose\": \"Confirm consistent 21:00 CDT peak on Oct 18\u201322 and shift to 19:00 CDT on Oct 23\u201324\"}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_jho0k8ve",
+   "from_cache": false
+  }
+ }
+}

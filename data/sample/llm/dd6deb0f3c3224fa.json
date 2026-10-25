@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You are part of RiverTruth, a team of agents that explains WHY river data sources disagree, for flood forecasters and emergency managers. Be precise, quantitative and honest about uncertainty. Never invent numbers: every claim must come from query results. Answer directly and concisely; do not deliberate at length.\", \"role\": \"system\"}, {\"content\": \"\\nDATA IN ZETARIS (Lightning SQL = Spark SQL dialect). Region: Black Warrior River at Tuscaloosa/Northport, Alabama.\\nFour",
+ "value": {
+  "text": "{\"sql\": \"WITH usgs_peaks AS (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, hr_utc AS usgs_peak_hr_utc, usgs_northport_peak_cfs AS usgs_peak_cfs FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-23 00:00' AND '2026-10-25 06:00' AND usgs_northport_peak_cfs IS NOT NULL QUALIFY ROW_NUMBER() OVER (PARTITION BY to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) ORDER BY usgs_northport_peak_cfs DESC) = 1), nwm_window AS (SELECT u.local_day, u.usgs_peak_hr_utc, u.usgs_peak_cfs, n.nwm_cfs AS nwm_at_usgs_peak_cfs, n.nwm_peak_cfs, n.nwm_peak_hour_cdt, (n.nwm_peak_hour_cdt - hour(from_utc_timestamp(to_timestamp(u.usgs_peak_hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago'))) AS lag_hours FROM usgs_peaks u LEFT JOIN (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, hr_utc, nwm_cfs, nwm_peak_cfs, hour(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS nwm_peak_hour_cdt FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-23 00:00' AND '2026-10-25 06:00' AND nwm_cfs IS NOT NULL) n ON u.local_day = n.local_day WHERE nwm_cfs IS NOT NULL) SELECT local_day, usgs_peak_cfs, nwm_at_usgs_peak_cfs, nwm_peak_cfs, lag_hours FROM nwm_window ORDER BY local_day LIMIT 200\", \"purpose\": \"Quantify NWM vs USGS on Oct 23\u201324: USGS peak cfs, NWM value at USGS peak hour, NWM peak cfs, and lag in hours\"}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_8uwq0445",
+   "from_cache": false
+  }
+ }
+}

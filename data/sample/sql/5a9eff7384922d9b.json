@@ -1,0 +1,9 @@
+{
+ "key": "CREATE SCHEMASTORE VIEW hc_avla1 WITH CONTAINER water AS\nSELECT s.hr_utc, u.usgs_cfs, u.usgs_peak_cfs, u.usgs_stage_ft, n.nwm_cfs, w.nws_cfs, w.nws_stage_ft, r.rain_mm\nFROM (SELECT hr_utc FROM (\n  SELECT date_format(to_utc_timestamp(to_timestamp(substr(p.`dateTime`, 1, 19)), 'America/Chicago'), 'yyyy-MM-dd HH:00') AS hr_utc,\n         ROUND(AVG(CASE WHEN ts.`variable`.`variableCode`[0].`value` = '00060' AND CAST(p.`value` AS DOUBLE) > -999 THEN CAST(p.`value` AS DOUBLE) END), 1) AS usgs_cfs,\n    ",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

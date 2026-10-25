@@ -102,6 +102,7 @@ header .topbar { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: ce
 .empty-state { display: flex; gap: 14px; align-items: flex-start; color: var(--ink-2); }
 .alert { background: #F8E1DE; border-left: 5px solid var(--critic); color: #5A1E17; font-weight: 600; padding: 12px 14px; border-radius: var(--radius-sm); }
 .caution { background: var(--warn-soft); border-left: 5px solid var(--warn); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14.5px; }
+.stale { background: var(--sheet); border: 1px dashed var(--ink-3); border-radius: var(--radius-sm); padding: 9px 14px; font-size: 14.5px; color: var(--ink-2); }
 .learned { background: var(--water-soft); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14.5px; }
 .card .foot { font-size: 13px; color: var(--ink-3); }
 .btn-main { border: 0; background: var(--navy); color: #F3F1EC; border-radius: 999px; padding: 9px 18px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
@@ -393,14 +394,15 @@ async function loadHydrograph() {
   $("lgUsgs").textContent = "USGS measured flow" + (st.flagship ? ", Northport" : ` (${st.usgs_label || "USGS"})`);
   $("lgNws").textContent = st.flagship ? "NWS flow, Oliver Lock and Dam" : `NWS flow (${st.nws_label || "NWS"})`;
   siteQuestion = d.question;
-  $("cases").style.display = st.flagship ? "" : "none";
+  const mine = lastCheck && lastCheck.site && lastCheck.site.lid === st.lid ? lastCheck : null;  // this gauge's River check
+  renderChips(st.flagship ? cases.map((c) => ({ label: c.label || c.name, question: c.question })) : (mine && mine.examples) || []);
   $("selTitle").textContent = st.name || site;
   $("nowNwsLbl").textContent = st.flagship ? "NWS at the dam" : (st.nws_label || "NWS gauge");
   if (st.flagship) $("selNote").textContent = FLAGSHIP_NOTE; else if (lastCheck && lastCheck.site && lastCheck.site.lid === st.lid) $("selNote").textContent = lastCheck.card.pattern || "";
   else $("selNote").textContent = "";
   tzOff = st.tz_offset ?? -5; tzName = st.flagship ? "Central" : (st.tz_label || "local");
   nwsName = st.flagship ? "NWS Oliver" : (st.nws_label || "NWS"); riverName = st.name || site;
-  if (!st.flagship && d.question) $("q").value = d.question;
+  if (!st.flagship) $("q").value = (mine && mine.question) || d.question || "";  // a question that fits what was found here
   const rows = d.rows.map((r) => ({ t: r[0], usgs: num(r[1]), nwm: num(r[2]), nws: num(r[3]), rain: num(r[4]), level: num(r[5]) }));
   chartMode = d.has_flow ? "flow" : rows.some((r) => r.level !== null) ? "level" : "none";
   for (const id of ["lgUsgs", "lgNwm", "lgNws"]) $(id).hidden = chartMode !== "flow";
@@ -588,10 +590,12 @@ async function loadMemory() {
 
 // ---------- cases
 async function loadCases() {
-  cases = await (await fetch("/api/cases")).json();
-  $("cases").innerHTML = cases.map((c) => `<button type="button" class="case" data-k="${c.key}">${esc(c.label || c.name.replace(/-/g, " "))}</button>`).join("");
+  cases = await (await fetch("/api/cases")).json();  // the Black Warrior's own examples; other gauges get theirs from the River check
+}
+function renderChips(list) {
+  $("cases").innerHTML = list.map((c, i) => `<button type="button" class="case" data-i="${i}">${esc(c.label)}</button>`).join("");
   $("cases").querySelectorAll(".case").forEach((b) => b.addEventListener("click", () => {
-    $("q").value = cases.find((c) => c.key === b.dataset.k).question; $("q").focus();
+    $("q").value = list[Number(b.dataset.i)].question; $("q").focus();
   }));
 }
 
@@ -785,10 +789,11 @@ function renderCheck(d) {
   $("cOut").innerHTML = `
     ${d.flood_alert ? `<div class="alert">${esc(d.flood_alert)}</div>` : ""}
     <p class="headline">${esc(c.headline || "")}</p>
+    ${d.stale ? `<div class="stale">${esc(d.stale)}</div>` : ""}
     ${f.ok === false ? "" : `<dl>
       <div><dt>${f.mode === "stage" ? "What this gauge measures" : "Which number to trust here"}</dt><dd>${esc(c.trust || "")}</dd></div>
       <div><dt>What the river has been doing</dt><dd>${esc(c.pattern || "")}${p ? `<div class="note" style="margin-top:4px">Would the other sources have shown it?</div>${seen}` : ""}</dd></div>
-      <div><dt>Right now</dt><dd>${esc(c.now || "")}</dd></div>
+      <div><dt>${d.stale ? "Latest reading" : "Right now"}</dt><dd>${esc(c.now || "")}</dd></div>
       <div><dt>For your plans</dt><dd>${esc(c.plan || "")}</dd></div>
     </dl>`}
     ${d.caution ? `<div class="caution">${esc(d.caution)}</div>` : ""}

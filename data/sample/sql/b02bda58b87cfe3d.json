@@ -1,0 +1,9 @@
+{
+ "key": "CREATE LIGHTNING REST TABLE iv_gwsc2_raw_b FROM USGS_NWIS REQUEST(\n endpoint \"https://waterservices.usgs.gov/nwis/iv/?format=json&sites=09085000&parameterCd=00060,00065&period=P7D\",\n method \"get\",\n response_type \"json\",\n http_encoding \"URLENCODED\"\n) HEADER (\n user-agent \"rivertruth-hackathon-demo\"\n) BODY ()",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

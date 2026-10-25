@@ -85,6 +85,7 @@ def _stage_only(site, rows, tz_label, loc):
     lo, hi = min(vals), max(vals)
     diff = last["stage"] - med
     now = {"stage_ft": round(last["stage"], 2), "at_local": f"{loc(last['t']):%a} {_hour(loc(last['t']).hour)} {tz_label}",
+           "at_utc": last["t"].strftime("%Y-%m-%dT%H:%MZ"),
            "vs_week_median_ft": round(diff, 2), "week_range_ft": [round(lo, 2), round(hi, 2)], "trend_last_3h": trend,
            "rain_last_24h_mm": round(sum(r["rain"] or 0 for r in rows if r["t"] > rows[-1]["t"] - timedelta(hours=24)), 1)}
     now["in_words"] = (f"Water level {now['stage_ft']} ft at {now['at_local']}: {abs(diff):.1f} ft "
@@ -189,6 +190,7 @@ def compute(site):
         trend = "rising" if ch > 0.15 else "falling" if ch < -0.15 else "steady"
     rain24 = sum(r["rain"] or 0 for r in rows if r["t"] > rows[-1]["t"] - timedelta(hours=24))
     now = {"flow_cfs": round(last[trusted]), "at_local": f"{loc(last['t']):%a} {_hour(loc(last['t']).hour)} {tz_label}",
+           "at_utc": last["t"].strftime("%Y-%m-%dT%H:%MZ"),
            "vs_week_median": round(last[trusted] / max(med, FLOOR), 2), "week_median_cfs": round(med),
            "week_range_cfs": [round(min(week)), round(max(week))], "trend_last_3h": trend,
            "rain_last_24h_mm": round(rain24, 1), "rain_week_mm": round(sum(r["rain"] or 0 for r in rows), 1)}
@@ -315,12 +317,42 @@ Reply with ONLY JSON: {{"headline": "...", "trust": "...", "pattern": "...", "pl
     return _template(f, when, activity), "template (model unavailable)"
 
 
-def check(lid, when="", activity="", flood=""):
+STALE_HOURS = 6  # a newest reading older than this is called out as old, not presented as "right now"
+
+
+def _stale_note(f, now, refreshed=None):
+    at = (f.get("now") or {}).get("at_utc")
+    if not at:
+        return None
+    age = (now - datetime.strptime(at, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)).total_seconds() / 3600
+    if age < STALE_HOURS:
+        return None
+    ago = f"about {round(age)} hours ago" if age < 36 else f"about {round(age / 24)} days ago"
+    head = f"The newest reading here is from {f['now']['at_local']}, {ago}."
+    if refreshed in ("refreshed", "fresh"):
+        return head + " We checked with the agencies within the last hour: they have published nothing newer for this gauge."
+    if refreshed == "failed":
+        return (head + " We couldn't get newer data from the agencies just now, so the river may have changed since: "
+                "check the official gauge page.")
+    return head + " Check the official gauge page for anything newer."
+
+
+def check(lid, when="", activity="", flood="", now=None):
     site = scout.ensure_site(lid)
+    try:
+        refreshed = scout.refresh(site, now=now)  # fetch again if this gauge's data is over an hour old
+    except Exception as e:  # noqa: BLE001  a failed refresh never blocks the check: the copy in use stays
+        log.event("refresh_error", lid=lid, error=str(e)[:200])
+        refreshed = "failed"
     f = compute(site)
     if f.get("ok"):
         f["official_flood_status"] = (flood or "unknown").replace("_", " ")
     out = {"site": site.to_dict(), "facts": f}
+    from .cases import suggest
+    out.update(suggest(site.name, f, flood))  # the question for the agent team fits what was found here
+    stale = _stale_note(f, now or datetime.now(timezone.utc), refreshed) if f.get("ok") else None
+    if stale:
+        out["stale"] = stale
     links = [{"label": f"NWS gauge {site.lid}", "url": f"https://water.noaa.gov/gauges/{site.lid}"}]
     if site.usgs_id:
         links.append({"label": f"USGS {site.usgs_id}", "url": f"https://waterdata.usgs.gov/monitoring-location/{site.usgs_id}/"})

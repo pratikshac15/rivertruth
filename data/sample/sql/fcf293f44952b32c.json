@@ -1,0 +1,35 @@
+{
+ "key": "SELECT local_day, MAX(usgs_northport_stage_ft) - MIN(usgs_northport_stage_ft) AS stage_change_ft FROM (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, usgs_northport_stage_ft FROM water.hourly_compare WHERE hr_utc >= '2026-10-19 05:00' AND hr_utc < '2026-10-25 05:00' AND usgs_northport_stage_ft IS NOT NULL) t GROUP BY local_day ORDER BY local_day LIMIT 200",
+ "value": {
+  "columns": [
+   "local_day",
+   "stage_change_ft"
+  ],
+  "rows": [
+   [
+    "2026-10-19",
+    "1.4599999999999937"
+   ],
+   [
+    "2026-10-20",
+    "1.1300000000000097"
+   ],
+   [
+    "2026-10-21",
+    "1.4099999999999966"
+   ],
+   [
+    "2026-10-22",
+    "1.1499999999999915"
+   ],
+   [
+    "2026-10-23",
+    "1.1400000000000006"
+   ],
+   [
+    "2026-10-24",
+    "1.1899999999999977"
+   ]
+  ]
+ }
+}

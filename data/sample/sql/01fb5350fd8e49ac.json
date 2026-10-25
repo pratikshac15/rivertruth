@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE noaa_nwps.pmaf1_observed_raw",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

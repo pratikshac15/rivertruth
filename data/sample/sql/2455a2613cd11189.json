@@ -1,0 +1,9 @@
+{
+ "key": "UNCACHE TABLE IF EXISTS noaa_nwps.avla1_observed_raw",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

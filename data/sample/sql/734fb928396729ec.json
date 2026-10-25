@@ -1,0 +1,9 @@
+{
+ "key": "CREATE LIGHTNING REST TABLE gwsc2_observed_raw_b FROM NOAA_NWPS REQUEST(\n endpoint \"https://api.water.noaa.gov/nwps/v1/gauges/GWSC2/stageflow/observed\",\n method \"get\",\n response_type \"json\",\n http_encoding \"URLENCODED\"\n) HEADER (\n user-agent \"rivertruth-hackathon-demo\"\n) BODY ()",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

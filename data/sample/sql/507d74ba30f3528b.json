@@ -1,0 +1,9 @@
+{
+ "key": "CREATE LIGHTNING REST TABLE reach_1324997_analysis_raw_b FROM NOAA_NWM REQUEST(\n endpoint \"https://api.water.noaa.gov/nwps/v1/reaches/1324997/streamflow?series=analysis_assimilation\",\n method \"get\",\n response_type \"json\",\n http_encoding \"URLENCODED\"\n) HEADER (\n user-agent \"rivertruth-hackathon-demo\"\n) BODY ()",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

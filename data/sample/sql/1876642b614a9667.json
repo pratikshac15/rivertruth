@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE noaa_nwps.gwsc2_observed_raw_b",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

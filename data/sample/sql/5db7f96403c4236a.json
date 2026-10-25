@@ -1,0 +1,9 @@
+{
+ "key": "DROP VIEW IF EXISTS water.hc_pmaf1",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

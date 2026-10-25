@@ -136,6 +136,25 @@ class Design(unittest.TestCase):
             self.assertIn("Oct 22", page.input_value("#q"))
             b.close()
 
+    def test_every_gauge_gets_examples_and_a_question_that_fits_it(self):
+        from agent.cases import LABELS
+        with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
+            b, page, errors = self._page(p, s.url)
+            self._check(page, "CKLA1")                       # the fake Cahaba's sources agree
+            page.click("#cDeep")
+            page.wait_for_selector("#deep", state="visible", timeout=5000)
+            page.wait_for_function("() => document.querySelectorAll('#cases .case').length === 3", timeout=5000)
+            labels = page.eval_on_selector_all("#cases .case", "bs => bs.map(b => b.textContent)")
+            self.assertIn("Which number should I trust here, and why?", labels)
+            q = page.input_value("#q")
+            self.assertIn("Cahaba", q)
+            self.assertNotIn("disagree", q)
+            self._check(page, "TODA1")                       # the Black Warrior keeps its own examples
+            page.wait_for_function("() => [...document.querySelectorAll('#cases .case')].map(b => b.textContent)"
+                                   ".includes('Why does the river jump at 9 PM?')", timeout=5000)
+            self.assertEqual(errors, [])
+            b.close()
+
     def test_one_typeface_for_the_answer(self):
         with Env(catalog_extra=10) as env, Server(env) as s, sync_playwright() as p:
             b, page, errors = self._page(p, s.url)

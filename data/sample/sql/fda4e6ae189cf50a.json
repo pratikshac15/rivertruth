@@ -1,0 +1,27 @@
+{
+ "key": "SELECT * FROM water.hc_pmaf1 LIMIT 1",
+ "value": {
+  "columns": [
+   "hr_utc",
+   "usgs_cfs",
+   "usgs_peak_cfs",
+   "usgs_stage_ft",
+   "nwm_cfs",
+   "nws_cfs",
+   "nws_stage_ft",
+   "rain_mm"
+  ],
+  "rows": [
+   [
+    "2026-09-28 01:00",
+    null,
+    null,
+    null,
+    null,
+    null,
+    "-0.06",
+    null
+   ]
+  ]
+ }
+}

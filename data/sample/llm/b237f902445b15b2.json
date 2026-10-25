@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You write short, accurate, plain-language river updates.\", \"role\": \"system\"}, {\"content\": \"FACTS about a river gauge (computed in code from USGS, NWS, the National Water Model and rainfall; always correct):\\n{\\n \\\"ok\\\": true,\\n \\\"mode\\\": \\\"stage\\\",\\n \\\"site\\\": \\\"PMAF1\\\",\\n \\\"name\\\": \\\"Tide Gauge at Port Manatee (in MHHW)\\\",\\n \\\"tz\\\": \\\"EDT\\\",\\n \\\"trusted\\\": \\\"NWS gauge water level (NWS PMAF1)\\\",\\n \\\"why_trusted\\\": \\\"this gauge reports water level only, not flow, so the",
+ "value": {
+  "text": "{\"headline\": \"Water level is -0.25 ft, slightly above this week's typical range and steady this evening.\", \"trust\": \"The NWS PMAF1 tide gauge is trusted because it reports only water level with no flow data to compare; other sources show similar steady levels this week.\", \"pattern\": \"The water level has been steady over the last 3 hours and this week ranged from -2.1 to 1.0 ft, so tonight's level is typical for the period.\", \"plan\": \"Paddling is possible given the current steady level, but avoid the water if conditions change and stay away from the banks.\"}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_jmvc6vv9",
+   "from_cache": false
+  }
+ }
+}

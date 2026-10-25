@@ -1,0 +1,15 @@
+{
+ "key": "SELECT * FROM (\n  SELECT date_format(to_timestamp(substr(t, 1, 16)), 'yyyy-MM-dd HH:00') AS hr_utc, ROUND(SUM(CAST(hourly.precipitation[i] AS DOUBLE)), 2) AS rain_mm\n  FROM open_meteo.rain_gwsc2_raw LATERAL VIEW posexplode(hourly.time) AS i, t GROUP BY 1\n) r LIMIT 1",
+ "value": {
+  "columns": [
+   "hr_utc",
+   "rain_mm"
+  ],
+  "rows": [
+   [
+    "2026-10-22 11:00",
+    "0.0"
+   ]
+  ]
+ }
+}

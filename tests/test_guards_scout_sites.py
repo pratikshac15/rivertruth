@@ -55,13 +55,14 @@ class Guards(unittest.TestCase):
 
 
 class ScoutSQL(unittest.TestCase):
-    def test_view_uses_usgs_spine_when_linked_and_nws_spine_otherwise(self):
+    def test_view_time_axis_is_every_river_source_and_missing_sources_are_null(self):
         from agent import scout
         with_usgs = scout._view_sql("CKLA1", scout.tables_for("CKLA1", "7"), "America/Chicago", True, True)
         nws_only = scout._view_sql("MMTW2", scout.tables_for("MMTW2", ""), "America/New_York", False, False)
-        self.assertIn("SELECT u.hr_utc", with_usgs)
-        self.assertEqual(with_usgs.count("LEFT JOIN"), 3)
-        self.assertIn("SELECT w.hr_utc", nws_only)
+        self.assertIn("SELECT s.hr_utc", with_usgs)
+        self.assertEqual(with_usgs.count("LEFT JOIN"), 4)          # every source joins the shared time axis
+        self.assertEqual(with_usgs.split("LEFT JOIN")[0].count(" UNION "), 2)  # USGS, NWS and model hours
+        self.assertIn("SELECT s.hr_utc", nws_only)
         self.assertIn("CAST(NULL AS DOUBLE) AS usgs_cfs", nws_only)
         self.assertIn("CAST(NULL AS DOUBLE) AS nwm_cfs", nws_only)
         self.assertNotIn("usgs_nwis", nws_only)
@@ -340,3 +341,38 @@ class StartingThePageDoesNotRedownloadEverything(unittest.TestCase):
             gauges.ALL["at"], gauges.ALL["tried"] = 1, 0  # half an hour later, still running
             self._load(gauges)
             self.assertTrue(any(c.upper().startswith("UNCACHE") for c in env.zet.calls))
+
+
+class FloodStageFact(unittest.TestCase):
+    """Oct 24 (Moenkopi Wash): the computed facts said "Latest stage 34.0 ft is -8.0 ft below the NWS action stage
+    (26 ft)". Two bugs: the sign (34 ft is above 26 ft), and it compared the USGS stage with an NWS flood level, which
+    are measured from different zero points (the NWS gauge itself read 58.5 ft). The fact now uses the NWS gauge's own
+    level and says above or below correctly."""
+
+    def _snapshot(self, nws_stage, usgs_stage=34.0, action=26):
+        from tests.fakes import Gauge, hours, make_gauges
+        g = make_gauges()
+        g["MOEA3"] = Gauge("MOEA3", "Moenkopi Wash near Tuba city", 36.1, -111.2, usgs_id="09401260", reach_id="111",
+                           tz="MST7MDT", flood={"action": action, "minor": 30, "moderate": 40, "major": 50},
+                           rows=hours(168, lambda i, t: {"usgs_cfs": 14300.0, "usgs_stage_ft": usgs_stage,
+                                                         "nws_stage_ft": nws_stage, "nwm_cfs": 12800.0, "rain_mm": 0.0}))
+        with Env(gauges=g):
+            from agent import scout, snapshot
+            return snapshot.build(scout.ensure_site("MOEA3"))
+
+    def test_above_flood_level_is_called_above(self):
+        s = self._snapshot(58.5)
+        self.assertIn("58.5 ft is 32.5 ft above the NWS action stage (26 ft)", s)
+        self.assertNotIn("-", s.split("action stage")[0].split("Latest NWS stage")[-1])
+
+    def test_below_flood_level_is_called_below(self):
+        self.assertIn("20.0 ft is 6.0 ft below the NWS action stage (26 ft)", self._snapshot(20.0))
+
+    def test_the_usgs_stage_is_never_compared_with_an_nws_flood_level(self):
+        s = self._snapshot(None, usgs_stage=34.0)
+        self.assertNotIn("34.0 ft is", s)
+
+    def test_the_ranking_still_reads_its_rows(self):
+        with Env():
+            from agent import radar, scout
+            self.assertTrue(radar.score(scout.ensure_site("CKLA1")))

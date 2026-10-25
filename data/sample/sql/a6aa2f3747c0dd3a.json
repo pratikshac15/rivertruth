@@ -1,0 +1,9 @@
+{
+ "key": "UNCACHE TABLE IF EXISTS noaa_nwm.reach_18631042_analysis_raw_b",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

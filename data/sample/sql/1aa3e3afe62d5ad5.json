@@ -1,0 +1,9 @@
+{
+ "key": "UNCACHE TABLE IF EXISTS usgs_nwis.iv_avla1_raw",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

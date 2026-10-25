@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE open_meteo.rain_gwsc2_raw",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE open_meteo.rain_pmaf1_raw",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

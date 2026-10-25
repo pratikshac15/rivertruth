@@ -1,0 +1,12 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You write short, accurate, plain-language river updates.\", \"role\": \"system\"}, {\"content\": \"FACTS about a river gauge (computed in code from USGS, NWS, the National Water Model and rainfall; always correct):\\n{\\n \\\"ok\\\": true,\\n \\\"site\\\": \\\"AVLA1\\\",\\n \\\"name\\\": \\\"Tombigbee River at Bevill Lock and Dam\\\",\\n \\\"tz\\\": \\\"CDT\\\",\\n \\\"trusted\\\": \\\"NWS gauge flow (NWS AVLA1)\\\",\\n \\\"why_trusted\\\": \\\"the USGS gauge here reports no flow, so the NWS gauge (flow converted from water ",
+ "value": {
+  "text": "{\n  \"headline\": \"Tombigbee River at Bevill Lock and Dam is near its usual weekly high, steady this evening.\",\n  \"trust\": \"The NWS gauge is the trusted source because the USGS gauge reports no flow here. The National Water Model reads about 6.8 times lower than the NWS gauge.\",\n  \"pattern\": \"The flow has been steady over the last 3 hours and is near the top of the week's range (1,390 to 3,540 cfs), so it is behaving like a typical weekly pattern, not a sudden surge.\",\n  \"plan\": \"Flow is high and steady this evening; if you go on the water, expect a strong current and give the banks a wide berth.\"\n}",
+  "served_by": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "receipt": {
+   "routed_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+   "decision_id": "req_0mx759e1",
+   "from_cache": false
+  }
+ }
+}

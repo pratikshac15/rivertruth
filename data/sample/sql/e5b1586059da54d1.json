@@ -1,0 +1,19 @@
+{
+ "key": "SELECT * FROM (\n  SELECT date_format(to_utc_timestamp(to_timestamp(substr(p.`dateTime`, 1, 19)), 'America/Chicago'), 'yyyy-MM-dd HH:00') AS hr_utc,\n         ROUND(AVG(CASE WHEN ts.`variable`.`variableCode`[0].`value` = '00060' AND CAST(p.`value` AS DOUBLE) > -999 THEN CAST(p.`value` AS DOUBLE) END), 1) AS usgs_cfs,\n         MAX(CASE WHEN ts.`variable`.`variableCode`[0].`value` = '00060' AND CAST(p.`value` AS DOUBLE) > -999 THEN CAST(p.`value` AS DOUBLE) END) AS usgs_peak_cfs,\n         ROUND(AVG(",
+ "value": {
+  "columns": [
+   "hr_utc",
+   "usgs_cfs",
+   "usgs_peak_cfs",
+   "usgs_stage_ft"
+  ],
+  "rows": [
+   [
+    "2026-10-22 11:00",
+    null,
+    null,
+    "109.08"
+   ]
+  ]
+ }
+}

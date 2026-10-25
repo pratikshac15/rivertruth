@@ -1,0 +1,56 @@
+{
+ "key": "SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS day_cdt, AVG(usgs_northport_cfs) AS mean_usgs_cfs, AVG(nws_oliver_cfs) AS mean_nws_cfs, AVG(nws_oliver_cfs) - AVG(usgs_northport_cfs) AS diff_cfs, MAX(usgs_northport_stage_ft) - MIN(usgs_northport_stage_ft) AS stage_change_ft FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-18 06:00' AND '2026-10-25 06:00' AND hr_utc >= '2026-10-19 05:00' AND hr_utc < '2026-10-25 05:00' GROUP BY day_cdt ORDE",
+ "value": {
+  "columns": [
+   "day_cdt",
+   "mean_usgs_cfs",
+   "mean_nws_cfs",
+   "diff_cfs",
+   "stage_change_ft"
+  ],
+  "rows": [
+   [
+    "2026-10-19",
+    "886.6624999999999",
+    "1165.3458333333333",
+    "278.6833333333334",
+    "1.4599999999999937"
+   ],
+   [
+    "2026-10-20",
+    "716.5374999999999",
+    "1164.375",
+    "447.8375000000001",
+    "1.1300000000000097"
+   ],
+   [
+    "2026-10-21",
+    "804.0625",
+    "1188.4041666666667",
+    "384.3416666666667",
+    "1.4099999999999966"
+   ],
+   [
+    "2026-10-22",
+    "746.4416666666665",
+    "1076.6125",
+    "330.17083333333346",
+    "1.1499999999999915"
+   ],
+   [
+    "2026-10-23",
+    "937.6999999999998",
+    "986.5166666666665",
+    "48.81666666666672",
+    "1.1400000000000006"
+   ],
+   [
+    "2026-10-24",
+    "674.9458333333333",
+    "1000.4583333333334",
+    "325.51250000000005",
+    "1.1899999999999977"
+   ]
+  ]
+ }
+}

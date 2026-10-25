@@ -51,6 +51,7 @@ class Site:
     flagship: bool = False
     entity: str = ""                 # World Model entity the run's memory attaches to
     tz: str = "America/Chicago"      # local time zone of the gauge (IANA)
+    slots: dict = field(default_factory=dict)  # source -> "" or "b": which of its two cached copies the view uses
 
     def tz_now(self, at=None):
         """(label, offset hours) of local time at `at` (UTC datetime) or now, e.g. ('CDT', -5)."""
@@ -66,7 +67,7 @@ class Site:
 
     def to_dict(self):
         return {k: getattr(self, k) for k in ("lid", "name", "view", "usgs_id", "reach_id", "lat", "lon", "usgs_label",
-                                              "nws_label", "flood", "upstream", "downstream", "flagship", "tz")}
+                                              "nws_label", "flood", "upstream", "downstream", "flagship", "tz", "slots")}
 
 
 def no_missing(rows):

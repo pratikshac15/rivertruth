@@ -1,0 +1,9 @@
+{
+ "key": "CREATE LIGHTNING REST TABLE rain_pmaf1_raw_b FROM OPEN_METEO REQUEST(\n endpoint \"https://api.open-meteo.com/v1/forecast?latitude=27.637&longitude=-82.563&hourly=precipitation&past_days=7&forecast_days=2&timezone=UTC\",\n method \"get\",\n response_type \"json\",\n http_encoding \"URLENCODED\"\n) HEADER (\n user-agent \"rivertruth-hackathon-demo\"\n) BODY ()",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}

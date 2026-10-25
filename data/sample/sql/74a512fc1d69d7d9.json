@@ -1,0 +1,9 @@
+{
+ "key": "CACHE TABLE usgs_nwis.iv_avla1_raw_b",
+ "value": {
+  "columns": [
+   "Result"
+  ],
+  "rows": []
+ }
+}
