@@ -19,6 +19,9 @@ def run_sql(sql, limit=200, purpose="", agent=False):
         hit = cache.get("sql", sql)
         if hit is not None:
             val = hit["value"]
+            if "error" in val:
+                log.event("sql", purpose=purpose, sql=sql, source="frozen", error=val["error"])
+                raise SQLError(val["error"])
             log.event("sql", purpose=purpose, sql=sql, source="frozen", rows=len(val["rows"]))
             return val
     if config.SAMPLE_MODE:
@@ -27,6 +30,9 @@ def run_sql(sql, limit=200, purpose="", agent=False):
             log.event("sql", purpose=purpose, sql=sql, source="sample", error="not in sample cache")
             raise SQLError("SAMPLE_MODE: this query is not in the sample cache")
         val = hit["value"]
+        if "error" in val:  # Zetaris rejected this query while recording: fail the same way
+            log.event("sql", purpose=purpose, sql=sql, source="sample", error=val["error"])
+            raise SQLError(val["error"])
         log.event("sql", purpose=purpose, sql=sql, source="sample", rows=len(val["rows"]))
         return val
     import requests  # only the live path needs it
@@ -48,6 +54,7 @@ def run_sql(sql, limit=200, purpose="", agent=False):
     if r.status_code != 200 or body.get("error"):
         msg = str(body.get("msg") or body.get("error") or body)[:600]
         log.event("sql", purpose=purpose, sql=sql, source="zetaris", seconds=dt, error=msg)
+        cache.put("sql", sql, {"error": msg})  # recorded too, so sample mode replays the model's retry
         raise SQLError(msg)
     cols = (body.get("columns") or body.get("schema") or body.get("columnNames") or body.get("header")
             or body.get("headers") or (body.get("meta") or {}).get("columns") or [])

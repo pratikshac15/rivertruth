@@ -1,0 +1,6 @@
+{
+ "key": "SELECT local_day, usgs_peak_cfs, usgs_peak_hour_cdt, nwm_at_usgs_peak_cfs, nwm_peak_cfs, nwm_peak_hour_cdt, lag_hours, peak_error_cfs FROM (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, hour(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS hr_cdt, usgs_northport_peak_cfs AS usgs_peak_cfs, nwm_cfs AS nwm_at_usgs_peak_cfs, nwm_peak_cfs, nwm_peak_hour_cdt, (nwm_peak_hour_cdt - usgs_peak_hour_cdt) AS l",
+ "value": {
+  "error": "[MISSING_ATTRIBUTES.RESOLVED_ATTRIBUTE_APPEAR_IN_OPERATION] Resolved attribute(s) \"value\" missing from \"declaredType\", \"globalScope\", \"name\", \"nil\", \"scope\", \"typeSubstituted\", \"value\" in operator !Generate explode(value#2955857.timeSeries), false, as, [ts#2955859]. Attribute(s) with the same name appear in the operation: \"value\".\nPlease check if the right attribute(s) are used.; line 10 pos 0;\n'GlobalLimit 200\n+- 'LocalLimit 200\n   +- 'Sort ['local_day ASC NULLS FIRST], true\n      +- 'Project ['local_day, 'usgs_peak_cfs, 'usgs_peak_hour_cdt, 'nwm_at_usgs_peak_cfs, 'nwm_peak_cfs, 'nwm_peak_hou"
+ }
+}

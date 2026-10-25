@@ -10,7 +10,7 @@ load_dotenv()
 
 SAMPLE_MODE = os.environ.get("SAMPLE_MODE", "false").lower() == "true"
 FAST_MODEL = os.environ.get("FAST_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
-DEEP_MODEL = os.environ.get("DEEP_MODEL", FAST_MODEL)
+DEEP_MODEL = os.environ.get("DEEP_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
 MAX_CRITIC_ROUNDS = int(os.environ.get("MAX_CRITIC_ROUNDS", "1"))
 MAX_INITIAL_CHECKS = int(os.environ.get("MAX_INITIAL_CHECKS", "4"))
 MAX_NEW_CHECKS = int(os.environ.get("MAX_NEW_CHECKS", "2"))

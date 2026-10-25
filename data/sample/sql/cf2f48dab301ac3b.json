@@ -1,0 +1,6 @@
+{
+ "key": "SELECT local_day, usgs_peak_cfs, usgs_peak_hour_cdt, nwm_at_usgs_peak_cfs, nwm_peak_cfs, nwm_peak_hour_cdt, lag_hours, peak_error_cfs FROM (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, hour(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS hr_cdt, usgs_northport_peak_cfs AS usgs_peak_cfs, nwm_cfs AS nwm_at_usgs_peak_cfs, MAX(nwm_cfs) OVER (PARTITION BY local_day) AS nwm_peak_cfs, hour(from_utc_time",
+ "value": {
+  "error": "[UNSUPPORTED_FEATURE.LATERAL_COLUMN_ALIAS_IN_WINDOW] The feature is not supported: Referencing a lateral column alias `local_day` in window expression \"MAX(nwm_cfs) OVER (PARTITION BY lateralAliasReference(local_day) unspecifiedframe$())\"."
+ }
+}

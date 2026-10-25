@@ -1,0 +1,6 @@
+{
+ "key": "SELECT DATE_FORMAT(CONVERT_TZ(hr_utc, '+00:00', '-05:00'), '%Y-%m-%d') AS day_cdt, HOUR(CONVERT_TZ(hr_utc, '+00:00', '-05:00')) AS peak_hour_cdt, MAX(usgs_northport_peak_cfs) AS max_peak_cfs FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-18 06:00' AND '2026-10-25 06:00' GROUP BY day_cdt, peak_hour_cdt ORDER BY day_cdt, max_peak_cfs DESC LIMIT 200",
+ "value": {
+  "error": "[UNRESOLVED_ROUTINE] Cannot resolve function `CONVERT_TZ` on search path [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].; line 1 pos 19"
+ }
+}

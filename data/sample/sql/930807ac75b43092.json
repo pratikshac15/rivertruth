@@ -1,0 +1,6 @@
+{
+ "key": "WITH usgs_peaks AS (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day, hr_utc AS usgs_peak_hr_utc, usgs_northport_peak_cfs AS usgs_peak_cfs FROM water.hourly_compare WHERE hr_utc BETWEEN '2026-10-23 00:00' AND '2026-10-25 06:00' AND usgs_northport_peak_cfs IS NOT NULL QUALIFY ROW_NUMBER() OVER (PARTITION BY to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) ORDER BY usgs_northport_peak_cfs DESC) = 1)",
+ "value": {
+  "error": "org.apache.hive.service.cli.HiveSQLException: com.zetaris.lightning.sql.parser.ddl.LightningDdlParseException: \nmismatched input 'with' expecting {'ADD', 'ANALYZE', 'ASSIGN', 'CREATE', 'DEBUG', 'DELETE', 'DESCRIBE', 'DISABLE', 'DROP', 'ENABLE', 'EXPLAIN', 'GRANT', 'IMPORT', 'INDEX', 'INFER', 'INVALIDATE', 'LIMIT', 'LIST', 'OFFSITE', 'ORGANISATION', 'PREVIEW', 'REGISTER', 'REINDEX', 'RELOAD', 'RESET', 'RESOLVE', 'REVOKE', 'REFRESH', 'RUN', 'SEARCH', 'SELECT', 'SET', 'SHOW', 'START', 'STOP', 'SYNC', 'TEST', 'TURN', 'UNCACHE', 'UPDATE', 'UPSERT', 'VALIDATE', 'VERIFY'}(line 1, pos 0)\n\n== SQL ==\nWI"
+ }
+}

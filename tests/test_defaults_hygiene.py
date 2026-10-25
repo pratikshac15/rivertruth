@@ -22,6 +22,22 @@ class Defaults(unittest.TestCase):
                 os.environ["RECORD_SAMPLES"] = saved
             importlib.reload(config)
 
+    def test_model_defaults_match_env_example_so_a_fresh_clone_replays_the_samples(self):
+        """The sample cache is keyed by model name; a clone without .env must use the recorded models."""
+        from agent import config
+        with open(os.path.join(ROOT, ".env.example")) as f:
+            example = dict(l.strip().split("=", 1) for l in f if re.match(r"^(FAST|DEEP)_MODEL=", l))
+        saved = {k: os.environ.pop(k, None) for k in ("FAST_MODEL", "DEEP_MODEL")}
+        try:
+            importlib.reload(config)
+            self.assertEqual(config.FAST_MODEL, example["FAST_MODEL"])
+            self.assertEqual(config.DEEP_MODEL, example["DEEP_MODEL"])
+        finally:
+            for k, v in saved.items():
+                if v is not None:
+                    os.environ[k] = v
+            importlib.reload(config)
+
     def test_recording_script_turns_recording_on_explicitly(self):
         with open(os.path.join(ROOT, "scripts", "record_samples.sh")) as f:
             self.assertIn("RECORD_SAMPLES=true", f.read())
@@ -54,6 +70,11 @@ def gitignored(path, patterns):
     parts = rel.split(os.sep)
     for p in patterns:
         p = p.rstrip("/")
+        if p.startswith("/"):  # anchored: only the path from the repository root
+            p = p[1:]
+            if fnmatch.fnmatch(rel, p) or rel.startswith(p + os.sep):
+                return True
+            continue
         if any(fnmatch.fnmatch(part, p) for part in parts) or fnmatch.fnmatch(rel, p) or rel.startswith(p + os.sep):
             return True
     return False
@@ -73,8 +94,18 @@ class Hygiene(unittest.TestCase):
                     yield p
 
     def test_secrets_and_local_state_are_ignored(self):
-        for must in (".env", "logs/", ".venv/", "data/world/", "dev_archive/", ".DS_Store", "__pycache__/"):
+        for must in (".env", "/logs/", ".venv/", "data/world/", "dev_archive/", ".DS_Store", "__pycache__/"):
             self.assertIn(must, self.ignore, must)
+
+    def test_an_anchored_pattern_only_ignores_the_top_level_folder(self):
+        self.assertTrue(gitignored(os.path.join(ROOT, "logs", "run_x.jsonl"), ["/logs/"]))
+        self.assertFalse(gitignored(os.path.join(ROOT, "output_examples", "logs", "run_x.jsonl"), ["/logs/"]))
+        self.assertTrue(gitignored(os.path.join(ROOT, "output_examples", "logs", "run_x.jsonl"), ["logs/"]))
+
+    def test_recorded_samples_and_their_logs_are_committed(self):
+        """Sample mode needs data/sample/ and the recording logs under output_examples/logs/ in the repo."""
+        self.assertNotIn("data/sample/", self.ignore)
+        self.assertNotIn("logs/", self.ignore, "a bare logs/ also hides output_examples/logs/; use /logs/")
 
     def test_env_example_has_placeholders_only(self):
         with open(os.path.join(ROOT, ".env.example")) as f:
@@ -88,7 +119,7 @@ class Hygiene(unittest.TestCase):
         pat = re.compile(r"(nvapi-[A-Za-z0-9_-]{10,}|sk-[A-Za-z0-9]{20,}|eyJhbGciOi|[A-Za-z0-9._%+-]+@gmail\.com)")
         hits = []
         for p in self.tracked_files():
-            if p.endswith((".png", ".jpg", ".pdf", ".pyc")) or "/data/sample/" in p:
+            if p.endswith((".png", ".jpg", ".pdf", ".pyc")):
                 continue
             try:
                 text = open(p, encoding="utf-8").read()
@@ -156,3 +187,106 @@ class SampleModeCoversTheWebApp(unittest.TestCase):
         self.assertEqual(rep.returncode, 0, rep.stdout[-800:] + rep.stderr[-800:])
         self.assertIn("gauges on the map", rep.stdout)
         self.assertIn("River check OK", rep.stdout)
+
+
+class FailedQueriesReplay(unittest.TestCase):
+    """A model-written query that Zetaris rejected while recording must fail the same way in sample mode, so the
+    model's retry prompt (which quotes the error) matches the recording and the rest of the run replays."""
+
+    def setUp(self):
+        import tempfile
+        from agent import config
+        self.config = config
+        self.saved = {k: getattr(config, k) for k in ("SAMPLE_DIR", "SAMPLE_MODE", "RECORD_SAMPLES", "FREEZE_SQL")}
+        config.SAMPLE_DIR = tempfile.mkdtemp()
+        for k in ("ZETARIS_REST_URL", "ZETARIS_API_KEY", "ZETARIS_ORG_ID"):
+            os.environ.setdefault(k, "x")
+
+    def tearDown(self):
+        for k, v in self.saved.items():
+            setattr(self.config, k, v)
+
+    def _record_failure(self, msg):
+        import sys
+        import types
+        from agent import zetaris
+
+        class Resp:
+            status_code = 400
+            text = msg
+
+            def json(self):
+                return {"error": True, "msg": msg}
+        fake = types.SimpleNamespace(post=lambda *a, **k: Resp())
+        saved = sys.modules.get("requests")
+        sys.modules["requests"] = fake
+        try:
+            self.config.RECORD_SAMPLES, self.config.SAMPLE_MODE = True, False
+            with self.assertRaises(zetaris.SQLError):
+                zetaris.run_sql("SELECT CONVERT_TZ(hr_utc) FROM water.hourly_compare")
+        finally:
+            if saved is not None:
+                sys.modules["requests"] = saved
+            else:
+                sys.modules.pop("requests", None)
+
+    def test_sample_mode_raises_the_recorded_error(self):
+        from agent import zetaris
+        msg = "[UNRESOLVED_ROUTINE] Cannot resolve function `CONVERT_TZ`"
+        self._record_failure(msg)
+        self.config.RECORD_SAMPLES, self.config.SAMPLE_MODE = False, True
+        with self.assertRaises(zetaris.SQLError) as cm:
+            zetaris.run_sql("SELECT CONVERT_TZ(hr_utc) FROM water.hourly_compare")
+        self.assertEqual(str(cm.exception), msg)
+
+    def test_frozen_recording_raises_the_recorded_error_too(self):
+        from agent import zetaris
+        msg = "[UNRESOLVED_ROUTINE] Cannot resolve function `CONVERT_TZ`"
+        self._record_failure(msg)
+        self.config.SAMPLE_MODE, self.config.FREEZE_SQL = False, True
+        with self.assertRaises(zetaris.SQLError) as cm:
+            zetaris.run_sql("SELECT CONVERT_TZ(hr_utc) FROM water.hourly_compare")
+        self.assertEqual(str(cm.exception), msg)
+
+
+class FailedModelCallsReplay(unittest.TestCase):
+    """If the big model failed while recording and the run fell back to the fast lane, sample mode must take the
+    same fallback instead of stopping at the missing reply."""
+
+    def setUp(self):
+        import tempfile
+        from agent import config, llm
+        self.config, self.llm = config, llm
+        self.saved = {k: getattr(config, k) for k in ("SAMPLE_DIR", "SAMPLE_MODE", "RECORD_SAMPLES")}
+        self.saved_stream, self.saved_dump = llm._stream, llm._dump_prompt
+        config.SAMPLE_DIR = tempfile.mkdtemp()
+        llm._dump_prompt = lambda *a, **k: None
+
+    def tearDown(self):
+        for k, v in self.saved.items():
+            setattr(self.config, k, v)
+        self.llm._stream, self.llm._dump_prompt = self.saved_stream, self.saved_dump
+
+    def test_recorded_failure_replays_the_fallback(self):
+        config, llm = self.config, self.llm
+        deep = "nvidia/nemotron-3-ultra-550b-a55b"
+
+        def stream(model, msgs, *a, **k):
+            if model == deep:
+                raise RuntimeError("no first token")
+            return "fast answer", model, {}, None
+        llm._stream = stream
+        msgs = [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}]
+        saved_sleep = llm.time.sleep
+        llm.time.sleep = lambda s: None
+        try:
+            config.RECORD_SAMPLES, config.SAMPLE_MODE = True, False
+            self.assertEqual(llm.chat("critic", msgs, model=deep, attempts=1), "fast answer")
+        finally:
+            llm.time.sleep = saved_sleep
+
+        def no_network(*a, **k):
+            raise AssertionError("sample mode must not call the model")
+        llm._stream = no_network
+        config.RECORD_SAMPLES, config.SAMPLE_MODE = False, True
+        self.assertEqual(llm.chat("critic", msgs, model=deep, attempts=1), "fast answer")

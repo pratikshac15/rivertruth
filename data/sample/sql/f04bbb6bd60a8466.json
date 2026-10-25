@@ -1,0 +1,6 @@
+{
+ "key": "SELECT local_day, MAX(usgs_northport_stage_ft) - MIN(usgs_northport_stage_ft) AS stage_change_ft FROM (SELECT to_date(from_utc_timestamp(to_timestamp(hr_utc, 'yyyy-MM-dd HH:mm'), 'America/Chicago')) AS local_day FROM water.hourly_compare WHERE hr_utc >= '2026-10-19 05:00' AND hr_utc < '2026-10-25 05:00' AND usgs_northport_stage_ft IS NOT NULL) t GROUP BY local_day ORDER BY local_day LIMIT 200",
+ "value": {
+  "error": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column or function parameter with name `usgs_northport_stage_ft` cannot be resolved. Did you mean one of the following? [`local_day`].; line 1 pos 22;\n'GlobalLimit 200\n+- 'LocalLimit 200\n   +- 'Sort ['local_day ASC NULLS FIRST], true\n      +- 'Aggregate [local_day#2950544], [local_day#2950544, ('MAX('usgs_northport_stage_ft) - 'MIN('usgs_northport_stage_ft)) AS stage_change_ft#2950545]\n         +- SubqueryAlias t\n            +- Project [to_date(from_utc_timestamp(to_timestamp(hr_utc#2951174, Some(yyyy-MM-dd HH:mm), TimestampType, Some(GMT), false), America"
+ }
+}

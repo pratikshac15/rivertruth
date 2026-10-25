@@ -114,6 +114,9 @@ def chat(role, messages, model=None, max_tokens=8000, temperature=None, attempts
         hit = cache.get("llm", key)
         if hit is None:
             raise RuntimeError(f"SAMPLE_MODE: no recorded model reply for this {role} step")
+        if "failed" in hit["value"]:  # this call failed while recording: take the same path again
+            log.event("llm_error", role=role, requested=model, error=hit["value"]["failed"][:300], source="sample")
+            return _after_failure(role, messages, model, max_tokens, temperature, attempts, hit["value"]["failed"])
         log.event("llm", role=role, requested=model, served_by=hit["value"]["served_by"],
                   receipt=hit["value"].get("receipt"), source="sample")
         return hit["value"]["text"]
@@ -158,6 +161,11 @@ def chat(role, messages, model=None, max_tokens=8000, temperature=None, attempts
                 budget = min(budget * 2, 16000)
             left = runctl.time_left()
             time.sleep(min(1.5 * i, max(0.0, (left or 99) - 3)))
+    cache.put("llm", key, {"failed": str(last_err)})  # recorded, so sample mode takes the same fallback
+    return _after_failure(role, messages, model, max_tokens, temperature, attempts, last_err)
+
+
+def _after_failure(role, messages, model, max_tokens, temperature, attempts, last_err):
     if model != config.FAST_MODEL:
         # The bigger model (critic/reporter) is optional: if it is unavailable, fall back to the fast lane.
         log.event("llm_fallback", role=role, from_model=model, to_model=config.FAST_MODEL, error=str(last_err)[:200])

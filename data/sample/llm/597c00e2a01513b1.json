@@ -1,0 +1,6 @@
+{
+ "key": "{\"messages\": [{\"content\": \"You are part of RiverTruth, a team of agents that explains WHY river data sources disagree, for flood forecasters and emergency managers. Be precise, quantitative and honest about uncertainty. Never invent numbers: every claim must come from query results. Answer directly and concisely; do not deliberate at length.\", \"role\": \"system\"}, {\"content\": \"\\nDATA IN ZETARIS (Lightning SQL = Spark SQL dialect). Region: Black Warrior River at Tuscaloosa/Northport, Alabama.\\nFour",
+ "value": {
+  "failed": "The model sent no first token within the cloud first-token limit, so the lane was stopped."
+ }
+}
